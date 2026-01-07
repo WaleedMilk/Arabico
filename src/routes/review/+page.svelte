@@ -1,12 +1,38 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { reviewStore } from '$lib/stores/review.svelte';
 	import { engagement } from '$lib/stores/engagement.svelte';
 	import StreakDisplay from '$lib/components/review/StreakDisplay.svelte';
 	import type { ReviewMode } from '$lib/types';
 
 	let selectedMode = $state<ReviewMode | null>(null);
+
+	// Direction slider for contextual mode (0-100, percentage of Arabic→English)
+	let directionRatio = $state(50);
+
+	// Load saved direction ratio from localStorage
+	function loadDirectionRatio() {
+		if (browser) {
+			const saved = localStorage.getItem('arabico-direction-ratio');
+			if (saved) {
+				directionRatio = parseInt(saved, 10);
+			}
+		}
+	}
+
+	// Save direction ratio to localStorage
+	function saveDirectionRatio() {
+		if (browser) {
+			localStorage.setItem('arabico-direction-ratio', directionRatio.toString());
+		}
+	}
+
+	$effect(() => {
+		// Save whenever ratio changes
+		saveDirectionRatio();
+	});
 
 	const modes: { id: ReviewMode; title: string; description: string; icon: string; words: number }[] = [
 		{
@@ -42,6 +68,7 @@
 	onMount(async () => {
 		await reviewStore.init();
 		await engagement.init();
+		loadDirectionRatio();
 	});
 
 	function startReview() {
@@ -107,6 +134,45 @@
 			</div>
 		</div>
 
+		<!-- Direction slider for contextual mode -->
+		{#if selectedMode === 'contextual'}
+			<div class="direction-slider-container bg-[var(--bg-elevated)] rounded-xl p-4 border border-[var(--border-color)]">
+				<div class="flex items-center justify-between mb-3">
+					<label for="direction-slider" class="text-sm font-medium text-[var(--text-secondary)]">
+						Review Direction
+					</label>
+					<span class="text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-1 rounded">
+						{directionRatio}% Arabic → English
+					</span>
+				</div>
+
+				<input
+					id="direction-slider"
+					type="range"
+					min="0"
+					max="100"
+					step="10"
+					bind:value={directionRatio}
+					class="direction-slider w-full"
+				/>
+
+				<div class="flex justify-between text-xs text-[var(--text-muted)] mt-2">
+					<span>English → Arabic</span>
+					<span>Arabic → English</span>
+				</div>
+
+				<p class="text-xs text-[var(--text-muted)] mt-3 text-center">
+					{#if directionRatio === 0}
+						All cards will show English first (recall Arabic)
+					{:else if directionRatio === 100}
+						All cards will show Arabic first (recall meaning)
+					{:else}
+						Mixed: {directionRatio}% Arabic→English, {100 - directionRatio}% English→Arabic
+					{/if}
+				</p>
+			</div>
+		{/if}
+
 		<!-- Start button -->
 		<button
 			onclick={startReview}
@@ -147,3 +213,56 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.direction-slider {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 6px;
+		border-radius: 3px;
+		background: var(--bg-secondary);
+		outline: none;
+	}
+
+	.direction-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: var(--accent-color);
+		cursor: pointer;
+		border: 2px solid white;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+		transition: transform 0.15s ease;
+	}
+
+	.direction-slider::-webkit-slider-thumb:hover {
+		transform: scale(1.1);
+	}
+
+	.direction-slider::-moz-range-thumb {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: var(--accent-color);
+		cursor: pointer;
+		border: 2px solid white;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	}
+
+	.direction-slider-container {
+		animation: slideIn 0.3s ease-out;
+	}
+
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+</style>

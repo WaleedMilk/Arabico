@@ -125,6 +125,9 @@ export interface AppState {
 // Review modes available
 export type ReviewMode = 'contextual' | 'quick' | 'recognition' | 'recall';
 
+// Review direction (for contextual mode slider)
+export type ReviewDirection = 'arabic-to-english' | 'english-to-arabic';
+
 // Quality rating for SM-2 algorithm (0-5 scale)
 export type ReviewQuality = 0 | 1 | 2 | 3 | 4 | 5;
 

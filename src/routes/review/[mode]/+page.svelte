@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { engagement } from '$lib/stores/engagement.svelte';
 	import ReviewSession from '$lib/components/review/ReviewSession.svelte';
 	import type { ReviewMode } from '$lib/types';
@@ -19,6 +20,9 @@
 
 	let mode = $derived(parseMode($page.params.mode));
 
+	// Direction ratio for contextual mode (loaded from localStorage)
+	let directionRatio = $state(50);
+
 	// Mode titles for display
 	const modeTitles: Record<ReviewMode, string> = {
 		contextual: 'Contextual Review',
@@ -29,6 +33,13 @@
 
 	onMount(async () => {
 		await engagement.init();
+		// Load direction ratio from localStorage
+		if (browser) {
+			const saved = localStorage.getItem('arabico-direction-ratio');
+			if (saved) {
+				directionRatio = parseInt(saved, 10);
+			}
+		}
 	});
 
 	function handleComplete() {
@@ -63,5 +74,5 @@
 	</header>
 
 	<!-- Review session -->
-	<ReviewSession {mode} onComplete={handleComplete} />
+	<ReviewSession {mode} {directionRatio} onComplete={handleComplete} />
 </div>

@@ -1,18 +1,30 @@
 <script lang="ts">
 	import { reviewStore } from '$lib/stores/review.svelte';
 	import { engagement } from '$lib/stores/engagement.svelte';
-	import type { ReviewMode, ReviewQuality } from '$lib/types';
-	import ContextualCard from './ContextualCard.svelte';
+	import type { ReviewMode, ReviewQuality, ReviewDirection } from '$lib/types';
+	import RecognitionCard from './RecognitionCard.svelte';
+	import RecallCard from './RecallCard.svelte';
+	import FlashCard from './FlashCard.svelte';
 	import QualitySelector from './QualitySelector.svelte';
 	import ReviewProgress from './ReviewProgress.svelte';
 	import ReviewComplete from './ReviewComplete.svelte';
 
 	interface Props {
 		mode: ReviewMode;
+		directionRatio?: number; // 0-100, percentage for arabic-to-english (contextual mode)
 		onComplete: () => void;
 	}
 
-	let { mode, onComplete }: Props = $props();
+	let { mode, directionRatio = 50, onComplete }: Props = $props();
+
+	// Determine card direction for contextual mode
+	let currentDirection = $state<ReviewDirection>('arabic-to-english');
+
+	function determineDirection(): ReviewDirection {
+		if (mode !== 'contextual') return 'arabic-to-english';
+		// Random based on ratio: if ratio is 70, 70% chance of arabic-to-english
+		return Math.random() * 100 < directionRatio ? 'arabic-to-english' : 'english-to-arabic';
+	}
 
 	// Local state
 	let showAnswer = $state(false);
@@ -33,6 +45,7 @@
 	async function startSession() {
 		await reviewStore.startSession(mode);
 		cardShownTime = Date.now();
+		currentDirection = determineDirection();
 	}
 
 	async function handleQualitySelect(quality: ReviewQuality) {
@@ -47,6 +60,7 @@
 			// Move to next card
 			showAnswer = false;
 			cardShownTime = Date.now();
+			currentDirection = determineDirection();
 		}
 	}
 
@@ -134,11 +148,26 @@
 			correct={reviewStore.sessionStats.correct}
 		/>
 
-		<ContextualCard
-			cardData={reviewStore.currentCard}
-			{showAnswer}
-			onReveal={handleReveal}
-		/>
+		<!-- Mode-based card rendering -->
+		{#if mode === 'quick'}
+			<FlashCard
+				cardData={reviewStore.currentCard}
+				{showAnswer}
+				onReveal={handleReveal}
+			/>
+		{:else if mode === 'recall' || (mode === 'contextual' && currentDirection === 'english-to-arabic')}
+			<RecallCard
+				cardData={reviewStore.currentCard}
+				{showAnswer}
+				onReveal={handleReveal}
+			/>
+		{:else}
+			<RecognitionCard
+				cardData={reviewStore.currentCard}
+				{showAnswer}
+				onReveal={handleReveal}
+			/>
+		{/if}
 
 		{#if showAnswer}
 			<QualitySelector onSelect={handleQualitySelect} />
