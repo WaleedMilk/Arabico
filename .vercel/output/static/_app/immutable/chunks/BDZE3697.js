@@ -1,0 +1,1 @@
+import{h as o,i as u,H as _,j as t,k as g,C as m,m as a,o as l,q as d,v as p}from"./ClOfLx3j.js";function E(n,r){let s=null,f=t;var i;if(t){s=p;for(var e=g(document.head);e!==null&&(e.nodeType!==m||e.data!==n);)e=a(e);if(e===null)l(!1);else{var y=a(e);e.remove(),d(y)}}t||(i=document.head.appendChild(o()));try{u(()=>r(i),_)}finally{f&&(l(!0),d(s))}}export{E as h};

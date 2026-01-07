@@ -9,16 +9,6 @@
 	let { children } = $props();
 
 	onMount(async () => {
-		// Initialize theme from localStorage
-		if (browser) {
-			const stored = localStorage.getItem('theme');
-			if (stored === 'dark' || stored === 'light') {
-				theme.set(stored);
-			} else {
-				theme.set('system');
-			}
-		}
-
 		// Load vocabulary cache
 		await vocabulary.init();
 	});
