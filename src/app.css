@@ -1,0 +1,223 @@
+@import 'tailwindcss';
+
+/* Soft Academia Theme - Custom Properties */
+:root {
+	/* Light mode colors */
+	--color-cream: #FAF7F2;
+	--color-parchment: #F0EBE3;
+	--color-sepia-50: #F9F6F1;
+	--color-sepia-100: #F0EBE3;
+	--color-sepia-200: #E0D5C7;
+	--color-sepia-300: #C9B99E;
+	--color-sepia-400: #A69175;
+	--color-sepia-500: #8B7355;
+	--color-sepia-600: #6B5744;
+	--color-sepia-700: #4A3C2F;
+	--color-sepia-800: #2D241C;
+	--color-sepia-900: #1A1512;
+	--color-gold: #C4A962;
+	--color-accent: #7B6F5C;
+
+	/* Semantic colors - Light mode */
+	--bg-primary: var(--color-cream);
+	--bg-secondary: var(--color-parchment);
+	--bg-elevated: white;
+	--text-primary: var(--color-sepia-800);
+	--text-secondary: var(--color-sepia-600);
+	--text-muted: var(--color-sepia-400);
+	--border-color: var(--color-sepia-200);
+	--accent-color: var(--color-sepia-500);
+	--highlight-new: transparent;
+	--highlight-seen: rgba(200, 185, 158, 0.3);
+	--highlight-learning: rgba(139, 115, 85, 0.25);
+	--highlight-known: transparent;
+	--highlight-ignored: rgba(166, 145, 117, 0.15);
+}
+
+/* Dark mode (dark academia) */
+.dark {
+	--bg-primary: #1A1512;
+	--bg-secondary: #2D241C;
+	--bg-elevated: #3D3228;
+	--text-primary: #F0EBE3;
+	--text-secondary: #C9B99E;
+	--text-muted: #A69175;
+	--border-color: #4A3C2F;
+	--accent-color: #C4A962;
+	--highlight-new: transparent;
+	--highlight-seen: rgba(200, 185, 158, 0.15);
+	--highlight-learning: rgba(196, 169, 98, 0.2);
+	--highlight-known: transparent;
+	--highlight-ignored: rgba(166, 145, 117, 0.1);
+}
+
+/* Tailwind v4 theme configuration */
+@theme {
+	--font-sans: 'Lora', Georgia, serif;
+	--font-serif: 'Lora', Georgia, serif;
+	--font-arabic: 'Amiri', serif;
+
+	--color-cream: #FAF7F2;
+	--color-parchment: #F0EBE3;
+	--color-sepia-50: #F9F6F1;
+	--color-sepia-100: #F0EBE3;
+	--color-sepia-200: #E0D5C7;
+	--color-sepia-300: #C9B99E;
+	--color-sepia-400: #A69175;
+	--color-sepia-500: #8B7355;
+	--color-sepia-600: #6B5744;
+	--color-sepia-700: #4A3C2F;
+	--color-sepia-800: #2D241C;
+	--color-sepia-900: #1A1512;
+	--color-gold: #C4A962;
+	--color-accent: #7B6F5C;
+}
+
+/* Base styles */
+html {
+	font-family: var(--font-serif);
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+	min-height: 100vh;
+	line-height: 1.6;
+}
+
+/* Arabic text specific styles */
+.arabic {
+	font-family: var(--font-arabic);
+	direction: rtl;
+	text-align: right;
+	font-size: 1.75rem;
+	line-height: 2.5;
+	letter-spacing: 0;
+}
+
+/* Quran text styling */
+.quran-text {
+	font-family: var(--font-arabic);
+	font-size: 1.875rem;
+	line-height: 2.75;
+	letter-spacing: 0;
+	word-spacing: 0.25rem;
+}
+
+/* Word token styles */
+.word-token {
+	cursor: pointer;
+	padding: 0.125rem 0.25rem;
+	border-radius: 0.25rem;
+	transition: background-color 0.15s ease;
+	display: inline;
+}
+
+.word-token:hover {
+	background-color: var(--highlight-learning);
+}
+
+.word-token.new {
+	background-color: var(--highlight-new);
+}
+
+.word-token.seen {
+	background-color: var(--highlight-seen);
+}
+
+.word-token.learning {
+	background-color: var(--highlight-learning);
+}
+
+.word-token.known {
+	background-color: var(--highlight-known);
+}
+
+.word-token.ignored {
+	background-color: var(--highlight-ignored);
+	opacity: 0.6;
+}
+
+/* Ayah number styling */
+.ayah-number {
+	font-family: var(--font-arabic);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.5rem;
+	height: 2.5rem;
+	margin-inline-start: 0.5rem;
+	color: var(--color-gold);
+	font-size: 0.875rem;
+}
+
+/* Surah header styling */
+.surah-header {
+	text-align: center;
+	padding: 2rem 1rem;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.surah-name-arabic {
+	font-family: var(--font-arabic);
+	font-size: 2.5rem;
+	color: var(--text-primary);
+	margin-bottom: 0.5rem;
+}
+
+.surah-name-english {
+	font-family: var(--font-serif);
+	font-size: 1.25rem;
+	color: var(--text-secondary);
+	font-style: italic;
+}
+
+/* Bismillah styling */
+.bismillah {
+	font-family: var(--font-arabic);
+	font-size: 2rem;
+	text-align: center;
+	color: var(--text-primary);
+	padding: 1.5rem;
+	margin-bottom: 1rem;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-sepia-300);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-sepia-400);
+}
+
+.dark ::-webkit-scrollbar-track {
+	background: var(--bg-secondary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+	background: var(--color-sepia-600);
+}
+
+/* Selection styling */
+::selection {
+	background-color: var(--color-gold);
+	color: var(--color-sepia-900);
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+	outline: 2px solid var(--color-gold);
+	outline-offset: 2px;
+}
