@@ -228,20 +228,18 @@
 {/if}
 
 <style>
-	/* Reader Layout with Panel */
+	/* Reader Layout - Simple approach with margin shift */
 	.reader-layout {
-		display: grid;
-		grid-template-columns: 1fr;
 		min-height: 100vh;
-		transition: grid-template-columns 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-	}
-
-	.reader-layout.panel-open {
-		grid-template-columns: 320px 1fr;
 	}
 
 	.reader-content {
-		transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+		transition: margin-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	/* When panel is open, shift content right on desktop */
+	.reader-layout.panel-open .reader-content {
+		margin-left: 320px;
 	}
 
 	.surah-reader {
@@ -353,8 +351,9 @@
 
 	/* Mobile responsive */
 	@media (max-width: 768px) {
-		.reader-layout.panel-open {
-			grid-template-columns: 1fr;
+		/* On mobile, panel becomes bottom sheet, no margin shift */
+		.reader-layout.panel-open .reader-content {
+			margin-left: 0;
 		}
 
 		.surah-reader {

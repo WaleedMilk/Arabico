@@ -3,7 +3,7 @@
  *
  * Loads word-by-word Quran data from bundled JSON files.
  * Uses lazy loading - only fetches surah data when needed.
- * Data sourced from QuranWBW (qazasaz/quranwbw).
+ * Arabic text from QuranWBW, translations from separate literal gloss file.
  */
 
 import type {
@@ -18,10 +18,43 @@ import type {
 const surahCache = new Map<number, Ayah[]>();
 const loadingPromises = new Map<number, Promise<Ayah[] | null>>();
 
+// Cache for word-by-word translations (loaded once)
+let wbwTranslations: Record<string, string> | null = null;
+let wbwLoadPromise: Promise<Record<string, string> | null> | null = null;
+
+/**
+ * Load the English word-by-word translation file
+ */
+async function loadWbwTranslations(): Promise<Record<string, string> | null> {
+	if (wbwTranslations) return wbwTranslations;
+	if (wbwLoadPromise) return wbwLoadPromise;
+
+	wbwLoadPromise = (async () => {
+		try {
+			const response = await fetch('/data/english-wbw.json');
+			if (!response.ok) {
+				console.error('Failed to load WBW translations:', response.status);
+				return null;
+			}
+			wbwTranslations = await response.json();
+			return wbwTranslations;
+		} catch (error) {
+			console.error('Error loading WBW translations:', error);
+			return null;
+		}
+	})();
+
+	return wbwLoadPromise;
+}
+
 /**
  * Transform QuranWBW data format to our Ayah format
  */
-function transformSurahData(surahId: number, data: QuranWBWSurah): Ayah[] {
+function transformSurahData(
+	surahId: number,
+	data: QuranWBWSurah,
+	translations: Record<string, string> | null
+): Ayah[] {
 	const ayahs: Ayah[] = [];
 
 	// QuranWBW uses string keys for ayah numbers
@@ -34,14 +67,20 @@ function transformSurahData(surahId: number, data: QuranWBWSurah): Ayah[] {
 		const ayahData: QuranWBWAyah = data[String(ayahNum)];
 		if (!ayahData || !ayahData.w) continue;
 
-		const words: QuranWordWithTranslation[] = ayahData.w.map((word, index) => ({
-			id: `${surahId}:${ayahNum}:${index + 1}`,
-			text: word.c,
-			transliteration: word.d,
-			translation: word.e,
-			audioStart: word.b,
-			audioDuration: word.h
-		}));
+		const words: QuranWordWithTranslation[] = ayahData.w.map((word, index) => {
+			const wordId = `${surahId}:${ayahNum}:${index + 1}`;
+			// Use literal translation from separate file, fallback to QuranWBW
+			const translation = translations?.[wordId] ?? word.e;
+
+			return {
+				id: wordId,
+				text: word.c,
+				transliteration: word.d,
+				translation,
+				audioStart: word.b,
+				audioDuration: word.h
+			};
+		});
 
 		// Combine all word texts for full ayah text
 		const fullText = words.map(w => w.text).join(' ');
@@ -74,14 +113,19 @@ async function loadSurahData(surahId: number): Promise<Ayah[] | null> {
 	// Start loading
 	const loadPromise = (async () => {
 		try {
-			const response = await fetch(`/data/surahs/${surahId}.json`);
-			if (!response.ok) {
-				console.error(`Failed to load surah ${surahId}: ${response.status}`);
+			// Load both surah data and translations in parallel
+			const [surahResponse, translations] = await Promise.all([
+				fetch(`/data/surahs/${surahId}.json`),
+				loadWbwTranslations()
+			]);
+
+			if (!surahResponse.ok) {
+				console.error(`Failed to load surah ${surahId}: ${surahResponse.status}`);
 				return null;
 			}
 
-			const data: QuranWBWSurah = await response.json();
-			const ayahs = transformSurahData(surahId, data);
+			const data: QuranWBWSurah = await surahResponse.json();
+			const ayahs = transformSurahData(surahId, data, translations);
 
 			// Cache the result
 			surahCache.set(surahId, ayahs);
