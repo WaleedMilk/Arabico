@@ -28,12 +28,12 @@
 	--border-color: var(--color-sepia-200);
 	--accent-color: var(--color-sepia-500);
 
-	/* Familiarity highlight colors - Light mode */
-	--highlight-new: rgba(196, 169, 98, 0.4);      /* Golden beige - words to learn */
-	--highlight-seen: transparent;                  /* Normal - already seen */
-	--highlight-learning: rgba(255, 213, 79, 0.45); /* Bright yellow - actively learning */
-	--highlight-known: rgba(255, 255, 255, 0.8);    /* White - mastered words */
-	--highlight-ignored: rgba(140, 140, 140, 0.2);  /* Gray - ignored words */
+	/* Familiarity text colors - Light mode */
+	--text-new: #C4A962;                           /* Gold - words to learn */
+	--text-seen: var(--text-primary);              /* Normal - already seen */
+	--text-learning: #D4A017;                      /* Bright gold - actively learning */
+	--text-known: #5B8C5A;                         /* Green - mastered words */
+	--text-ignored: #9CA3AF;                       /* Gray - ignored words */
 }
 
 /* Dark mode (dark academia) */
@@ -47,12 +47,12 @@
 	--border-color: #4A3C2F;
 	--accent-color: #C4A962;
 
-	/* Familiarity highlight colors - Dark mode */
-	--highlight-new: rgba(196, 169, 98, 0.35);     /* Golden beige - words to learn */
-	--highlight-seen: transparent;                  /* Normal - already seen */
-	--highlight-learning: rgba(255, 213, 79, 0.3);  /* Bright yellow - actively learning */
-	--highlight-known: rgba(255, 255, 255, 0.15);   /* White/light - mastered words */
-	--highlight-ignored: rgba(100, 100, 100, 0.25); /* Gray - ignored words */
+	/* Familiarity text colors - Dark mode */
+	--text-new: #D4B86A;                           /* Gold - words to learn */
+	--text-seen: var(--text-primary);              /* Normal - already seen */
+	--text-learning: #F0C040;                      /* Bright gold - actively learning */
+	--text-known: #7CB87C;                         /* Green - mastered words */
+	--text-ignored: #6B7280;                       /* Gray - ignored words */
 }
 
 /* Tailwind v4 theme configuration */
@@ -114,32 +114,32 @@ body {
 	cursor: pointer;
 	padding: 0.125rem 0.25rem;
 	border-radius: 0.25rem;
-	transition: background-color 0.15s ease;
+	transition: color 0.15s ease, opacity 0.15s ease;
 	display: inline;
 }
 
 .word-token:hover {
-	background-color: var(--highlight-learning);
+	color: var(--text-learning);
 }
 
 .word-token.new {
-	background-color: var(--highlight-new);
+	color: var(--text-new);
 }
 
 .word-token.seen {
-	background-color: var(--highlight-seen);
+	color: var(--text-seen);
 }
 
 .word-token.learning {
-	background-color: var(--highlight-learning);
+	color: var(--text-learning);
 }
 
 .word-token.known {
-	background-color: var(--highlight-known);
+	color: var(--text-known);
 }
 
 .word-token.ignored {
-	background-color: var(--highlight-ignored);
+	color: var(--text-ignored);
 	opacity: 0.6;
 }
 

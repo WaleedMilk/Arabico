@@ -27,18 +27,18 @@
 		return new Date(entry.nextReviewDate) <= new Date();
 	});
 
-	// CSS classes based on familiarity
-	// New = golden beige (encourages learning)
-	// Seen = normal/transparent (already encountered)
-	// Learning = bright yellow (actively studying)
-	// Known = white/clean (mastered)
+	// CSS classes based on familiarity (text colors, not backgrounds)
+	// New = gold (encourages learning)
+	// Seen = normal text (already encountered)
+	// Learning = bright gold (actively studying)
+	// Known = green (mastered)
 	// Ignored = gray (de-emphasized)
 	const familiarityClasses: Record<FamiliarityLevel, string> = {
-		new: 'bg-[var(--highlight-new)]',
-		seen: '',
-		learning: 'bg-[var(--highlight-learning)]',
-		known: 'bg-[var(--highlight-known)]',
-		ignored: 'bg-[var(--highlight-ignored)] opacity-60'
+		new: 'text-[var(--text-new)]',
+		seen: 'text-[var(--text-seen)]',
+		learning: 'text-[var(--text-learning)]',
+		known: 'text-[var(--text-known)]',
+		ignored: 'text-[var(--text-ignored)] opacity-60'
 	};
 	let familiarityClass = $derived(familiarityClasses[familiarity] || '');
 
@@ -68,7 +68,7 @@
 
 <span
 	class="word-token relative cursor-pointer rounded px-1 py-0.5 transition-all duration-150
-	       hover:bg-[var(--highlight-learning)] focus:outline-none focus:ring-2 focus:ring-gold/50
+	       hover:text-[var(--text-learning)] focus:outline-none focus:ring-2 focus:ring-gold/50
 	       {familiarityClass}"
 	class:ring-2={isDue}
 	class:ring-gold={isDue}
