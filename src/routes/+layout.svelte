@@ -6,6 +6,7 @@
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 
 	let { children } = $props();
 
@@ -31,23 +32,23 @@
 				<span class="text-lg font-medium tracking-wide text-[var(--text-secondary)]">Arabico</span>
 			</a>
 
-			<!-- Navigation -->
+			<!-- Navigation - hidden on mobile, shown in bottom nav instead -->
 			<div class="flex items-center gap-4">
 				<a
 					href="/"
-					class="text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+					class="desktop-nav-link text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
 				>
 					Surahs
 				</a>
 				<a
 					href="/review"
-					class="text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+					class="desktop-nav-link text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
 				>
 					Review
 				</a>
 				<a
 					href="/vocabulary"
-					class="text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+					class="desktop-nav-link text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
 				>
 					Vocabulary
 				</a>
@@ -57,15 +58,37 @@
 	</header>
 
 	<!-- Main Content -->
-	<main class="mx-auto max-w-4xl px-4 py-6">
+	<main class="main-content mx-auto max-w-4xl px-4 py-6">
 		{@render children()}
 	</main>
 
-	<!-- Footer -->
-	<footer class="border-t border-[var(--border-color)] py-6 text-center text-sm text-[var(--text-muted)]">
+	<!-- Footer - hidden on mobile -->
+	<footer class="desktop-footer border-t border-[var(--border-color)] py-6 text-center text-sm text-[var(--text-muted)]">
 		<p>
 			Quran text from <a href="https://tanzil.net" class="underline hover:text-[var(--text-secondary)]" target="_blank" rel="noopener">Tanzil.net</a>
 		</p>
 		<p class="mt-1">Built with reverence for the sacred text</p>
 	</footer>
+
+	<!-- Mobile Bottom Navigation -->
+	<MobileNav />
 </div>
+
+<style>
+	/* Hide desktop nav links on mobile */
+	@media (max-width: 768px) {
+		:global(.desktop-nav-link) {
+			display: none;
+		}
+
+		/* Hide footer on mobile - bottom nav takes its place */
+		:global(.desktop-footer) {
+			display: none;
+		}
+
+		/* Add bottom padding for mobile nav clearance */
+		:global(.main-content) {
+			padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 1.5rem);
+		}
+	}
+</style>

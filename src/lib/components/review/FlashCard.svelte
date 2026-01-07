@@ -172,4 +172,24 @@
 			transform: scale(0.98);
 		}
 	}
+
+	/* Mobile typography scaling */
+	@media (max-width: 400px) {
+		.arabic-word {
+			font-size: 3rem;
+		}
+
+		.arabic-word-small {
+			font-size: 2rem;
+		}
+
+		.meaning-text {
+			font-size: 1.25rem;
+		}
+
+		.card-front,
+		.card-back {
+			padding: 1.5rem;
+		}
+	}
 </style>

@@ -262,4 +262,40 @@
 			transform: translateY(0);
 		}
 	}
+
+	/* Mobile typography scaling */
+	@media (max-width: 400px) {
+		.card-header {
+			padding: 0.5rem 1rem;
+		}
+
+		.verse-context {
+			padding: 0.75rem 1rem;
+		}
+
+		.verse-text {
+			font-size: 1.25rem;
+			line-height: 1.8;
+		}
+
+		.word-display {
+			padding: 1.5rem 1rem;
+		}
+
+		.arabic-word {
+			font-size: 2.5rem;
+		}
+
+		.answer-section {
+			padding: 1rem;
+		}
+
+		.meaning-text {
+			font-size: 1.25rem;
+		}
+
+		.context-text {
+			font-size: 1rem;
+		}
+	}
 </style>
