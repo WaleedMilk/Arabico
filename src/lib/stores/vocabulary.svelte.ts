@@ -1,34 +1,125 @@
 import { browser } from '$app/environment';
 import { vocabularyDB, db } from '$lib/db';
+import {
+	getCurrentUserId,
+	fetchVocabularyFromSupabase,
+	syncVocabularyToSupabase,
+	updateWordFamiliarity,
+	type DbVocabularyEntry
+} from '$lib/db/supabase';
 import type { VocabularyEntry, FamiliarityLevel, QuranLocation } from '$lib/types';
 
 // In-memory cache of word familiarity for fast lookups during reading
 function createVocabularyStore() {
 	let familiarityCache = $state<Map<string, FamiliarityLevel>>(new Map());
 	let isLoaded = $state(false);
+	let userId = $state<string | null>(null);
+	let isSyncing = $state(false);
+
+	// Load vocabulary from Supabase and merge with local
+	async function loadFromSupabase() {
+		if (!browser) return;
+
+		try {
+			userId = await getCurrentUserId();
+			if (!userId) return;
+
+			const remoteEntries = await fetchVocabularyFromSupabase(userId);
+			const cache = new Map<string, FamiliarityLevel>();
+
+			for (const entry of remoteEntries) {
+				cache.set(entry.word_id, entry.familiarity);
+
+				// Also save to local IndexedDB for offline access
+				await vocabularyDB.upsert({
+					wordId: entry.word_id,
+					surfaceForm: entry.surface_form,
+					lemma: entry.lemma,
+					root: entry.root,
+					gloss: entry.gloss,
+					frequencyRank: entry.frequency_rank,
+					firstSeen: { surahId: 1, ayahId: 1 }, // Default, will be overwritten
+					familiarity: entry.familiarity,
+					lastReviewed: entry.last_reviewed ? new Date(entry.last_reviewed) : undefined,
+					reviewCount: entry.review_count
+				});
+			}
+
+			familiarityCache = cache;
+		} catch (error) {
+			console.error('Failed to load from Supabase:', error);
+			// Fall back to local data
+			await loadFromLocal();
+		}
+	}
+
+	// Load from local IndexedDB (fallback/offline)
+	async function loadFromLocal() {
+		if (!browser) return;
+
+		try {
+			const allWords = await db.vocabulary.toArray();
+			const cache = new Map<string, FamiliarityLevel>();
+			for (const word of allWords) {
+				cache.set(word.wordId, word.familiarity);
+			}
+			familiarityCache = cache;
+		} catch (error) {
+			console.error('Failed to load vocabulary cache:', error);
+		}
+	}
 
 	// Load all vocabulary into cache on init
 	async function loadCache() {
 		if (!browser) return;
 
 		try {
-			// Single query to get all words (more efficient)
-			const allWords = await db.vocabulary.toArray();
+			userId = await getCurrentUserId();
 
-			const cache = new Map<string, FamiliarityLevel>();
-			for (const word of allWords) {
-				cache.set(word.wordId, word.familiarity);
+			// Try loading from Supabase first
+			if (navigator.onLine && userId) {
+				await loadFromSupabase();
+			} else {
+				await loadFromLocal();
 			}
-			familiarityCache = cache;
+
 			isLoaded = true;
 		} catch (error) {
 			console.error('Failed to load vocabulary cache:', error);
+			// Fallback to local
+			await loadFromLocal();
+			isLoaded = true;
 		}
 	}
 
 	// Helper to update cache reactively
 	function setCacheEntry(wordId: string, level: FamiliarityLevel) {
 		familiarityCache = new Map(familiarityCache).set(wordId, level);
+	}
+
+	// Sync a single word to Supabase
+	async function syncWordToSupabase(entry: VocabularyEntry) {
+		if (!userId || !navigator.onLine) return;
+
+		try {
+			const dbEntry: DbVocabularyEntry = {
+				user_id: userId,
+				word_id: entry.wordId,
+				surface_form: entry.surfaceForm,
+				lemma: entry.lemma,
+				root: entry.root,
+				gloss: entry.gloss,
+				frequency_rank: entry.frequencyRank,
+				first_seen: new Date().toISOString(),
+				familiarity: entry.familiarity,
+				last_reviewed: entry.lastReviewed?.toISOString(),
+				review_count: entry.reviewCount
+			};
+
+			await syncVocabularyToSupabase(userId, [dbEntry]);
+		} catch (error) {
+			console.error('Failed to sync word to Supabase:', error);
+		}
 	}
 
 	return {
@@ -38,9 +129,48 @@ function createVocabularyStore() {
 		get isLoaded() {
 			return isLoaded;
 		},
+		get isSyncing() {
+			return isSyncing;
+		},
+		get userId() {
+			return userId;
+		},
 
 		async init() {
 			await loadCache();
+		},
+
+		// Force sync with Supabase
+		async syncWithCloud() {
+			if (!browser || !userId || isSyncing) return;
+
+			isSyncing = true;
+			try {
+				// Get all local entries
+				const localEntries = await db.vocabulary.toArray();
+
+				// Convert to Supabase format
+				const dbEntries: DbVocabularyEntry[] = localEntries.map(entry => ({
+					user_id: userId!,
+					word_id: entry.wordId,
+					surface_form: entry.surfaceForm,
+					lemma: entry.lemma,
+					root: entry.root,
+					gloss: entry.gloss,
+					frequency_rank: entry.frequencyRank,
+					first_seen: new Date().toISOString(),
+					familiarity: entry.familiarity,
+					last_reviewed: entry.lastReviewed?.toISOString(),
+					review_count: entry.reviewCount
+				}));
+
+				await syncVocabularyToSupabase(userId!, dbEntries);
+
+				// Reload from cloud to get merged data
+				await loadFromSupabase();
+			} finally {
+				isSyncing = false;
+			}
 		},
 
 		getFamiliarity(wordId: string): FamiliarityLevel {
@@ -54,27 +184,37 @@ function createVocabularyStore() {
 
 			// Only update if word is new
 			if (!current || current === 'new') {
-				const entry: Omit<VocabularyEntry, 'id'> = {
+				const entry: VocabularyEntry = {
 					wordId,
 					surfaceForm,
 					lemma,
 					gloss,
-					frequencyRank: 0, // Will be populated from corpus data
+					frequencyRank: 0,
 					firstSeen: location,
 					familiarity: 'seen',
 					reviewCount: 0
 				};
 
+				// Save locally first (fast)
 				await vocabularyDB.upsert(entry);
 				setCacheEntry(wordId, 'seen');
+
+				// Then sync to Supabase (async, don't block)
+				syncWordToSupabase(entry);
 			}
 		},
 
 		async updateFamiliarity(wordId: string, level: FamiliarityLevel) {
 			if (!browser) return;
 
+			// Update locally first
 			await vocabularyDB.updateFamiliarity(wordId, level);
 			setCacheEntry(wordId, level);
+
+			// Sync to Supabase
+			if (userId && navigator.onLine) {
+				updateWordFamiliarity(userId, wordId, level).catch(console.error);
+			}
 		},
 
 		async addToReview(wordId: string) {
