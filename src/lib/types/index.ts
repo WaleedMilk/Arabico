@@ -1,4 +1,56 @@
-// Familiarity levels for vocabulary tracking
+/**
+ * @fileoverview Core type definitions for Arabico - Quranic Arabic Learning App
+ *
+ * This file contains all TypeScript types, interfaces, and constants used
+ * throughout the application. Types are organized into logical groups.
+ *
+ * ## Type Groups:
+ *
+ * ### Vocabulary & Learning
+ * - {@link FamiliarityLevel} - Word learning stages (new → known)
+ * - {@link VocabularyEntry} - Complete word entry with SRS data
+ * - {@link DEFAULT_SRS_VALUES} - Default values for new entries
+ *
+ * ### Quran Structure
+ * - {@link QuranLocation} - Position reference (surah:ayah:word)
+ * - {@link QuranWord}, {@link Ayah}, {@link Surah} - Quran data hierarchy
+ * - {@link QuranData} - Complete Quran structure
+ *
+ * ### Review System
+ * - {@link ReviewMode} - Available review modes
+ * - {@link ReviewQuality} - SM-2 quality ratings (0-5)
+ * - {@link ReviewSession}, {@link ReviewCardData} - Session management
+ * - {@link SRSResult} - Algorithm calculation output
+ *
+ * ### External Data (QuranWBW)
+ * - {@link QuranWBWWord}, {@link QuranWBWAyah}, {@link QuranWBWSurah}
+ *   Types matching the quranwbw JSON data format
+ *
+ * ### User & Settings
+ * - {@link UserProgress}, {@link UserSettings}, {@link UserEngagement}
+ * - {@link AppState}, {@link ThemeMode}
+ *
+ * ## AI Development Notes:
+ * - When adding new types, place them in the appropriate section
+ * - Add JSDoc comments for complex types
+ * - Use type guards from './guards.ts' for runtime validation
+ * - SerializableDate exists because IndexedDB can't store Date objects
+ *
+ * @module types
+ */
+
+// ============================================
+// Vocabulary & Learning Types
+// ============================================
+
+/**
+ * Learning stages for vocabulary words
+ * - new: Never seen, highlighted for attention
+ * - seen: Encountered during reading
+ * - learning: Actively being reviewed with SRS
+ * - known: Mastered (5+ consecutive correct, EF >= 2.0, interval >= 21 days)
+ * - ignored: User chose to skip (common words, etc.)
+ */
 export type FamiliarityLevel = 'new' | 'seen' | 'learning' | 'known' | 'ignored';
 
 // Location reference in Quran

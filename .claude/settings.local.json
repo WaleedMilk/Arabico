@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npm run build:*)",
-      "Bash(node scripts/download-quran-data.js:*)"
+      "Bash(node scripts/download-quran-data.js:*)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(npm run test:run:*)"
     ]
   }
 }
