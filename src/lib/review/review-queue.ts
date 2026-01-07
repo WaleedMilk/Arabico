@@ -10,7 +10,8 @@
 
 import { vocabularyDB } from '$lib/db';
 import type { VocabularyEntry, ReviewMode, ReviewCardData, WordOccurrence } from '$lib/types';
-import { getSurahById, getSurahAyahs } from '$lib/data/surahs';
+import { getSurahById } from '$lib/data/surahs';
+import { getSurahAyahs } from '$lib/data/quran-sample';
 import { calculateDifficultyScore } from './srs-algorithm';
 
 export interface ReviewQueueOptions {
@@ -88,7 +89,15 @@ function sortByPriority(words: VocabularyEntry[], mode: ReviewMode): VocabularyE
  */
 export async function buildReviewCardData(entry: VocabularyEntry): Promise<ReviewCardData> {
 	// Get primary context (first seen location)
-	const primaryContext = await getWordOccurrence(entry.firstSeen);
+	const primaryContextResult = await getWordOccurrence(entry.firstSeen);
+
+	// Create fallback context if no data available
+	const primaryContext: WordOccurrence = primaryContextResult ?? {
+		location: entry.firstSeen,
+		surahName: `Surah ${entry.firstSeen.surah}`,
+		ayahText: entry.surfaceForm, // Show just the word if no ayah text
+		translation: undefined
+	};
 
 	// Get additional contexts from encounter locations
 	const additionalLocations = (entry.encounterLocations || [])

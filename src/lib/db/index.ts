@@ -76,14 +76,14 @@ export const vocabularyDB = {
 	},
 
 	async upsert(entry: Omit<VocabularyEntry, 'id'>): Promise<number> {
-		// Add default SRS values for new entries
+		// Add default SRS values for new entries (spread entry last so it can override defaults)
 		const entryWithDefaults: Omit<VocabularyEntry, 'id'> = {
-			easeFactor: 2.5,
-			interval: 0,
-			consecutiveCorrect: 0,
-			difficultyScore: 0.5,
-			encounterLocations: entry.firstSeen ? [entry.firstSeen] : [],
-			...entry
+			...entry,
+			easeFactor: entry.easeFactor ?? 2.5,
+			interval: entry.interval ?? 0,
+			consecutiveCorrect: entry.consecutiveCorrect ?? 0,
+			difficultyScore: entry.difficultyScore ?? 0.5,
+			encounterLocations: entry.encounterLocations ?? (entry.firstSeen ? [entry.firstSeen] : [])
 		};
 
 		const existing = await this.getByWordId(entry.wordId);
