@@ -1,0 +1,28 @@
+{
+  "name": "arabico",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-vercel": "^5.7.4",
+    "@sveltejs/kit": "^2.21.1",
+    "@sveltejs/vite-plugin-svelte": "^5.1.0",
+    "@tailwindcss/vite": "^4.1.7",
+    "@vite-pwa/sveltekit": "^1.1.0",
+    "svelte": "^5.33.5",
+    "svelte-check": "^4.2.1",
+    "tailwindcss": "^4.1.7",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "dexie": "^4.0.11"
+  },
+  "type": "module"
+}
