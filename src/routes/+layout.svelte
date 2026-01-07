@@ -4,12 +4,14 @@
 	import { browser } from '$app/environment';
 	import { theme } from '$lib/stores/settings.svelte';
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 
 	let { children } = $props();
 
 	onMount(async () => {
-		// Load vocabulary cache
+		// Initialize auth and vocabulary
+		await auth.init();
 		await vocabulary.init();
 	});
 </script>

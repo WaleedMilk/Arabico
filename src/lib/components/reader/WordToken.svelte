@@ -16,11 +16,16 @@
 	let familiarity = $derived(vocabulary.getFamiliarity(word.id));
 
 	// CSS classes based on familiarity
+	// New = golden beige (encourages learning)
+	// Seen = normal/transparent (already encountered)
+	// Learning = bright yellow (actively studying)
+	// Known = white/clean (mastered)
+	// Ignored = gray (de-emphasized)
 	const familiarityClasses: Record<FamiliarityLevel, string> = {
-		new: '',
-		seen: 'bg-[var(--highlight-seen)]',
+		new: 'bg-[var(--highlight-new)]',
+		seen: '',
 		learning: 'bg-[var(--highlight-learning)]',
-		known: '',
+		known: 'bg-[var(--highlight-known)]',
 		ignored: 'bg-[var(--highlight-ignored)] opacity-60'
 	};
 	let familiarityClass = $derived(familiarityClasses[familiarity] || '');
