@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { vocabularyDB } from '$lib/db';
+import { vocabularyDB, db } from '$lib/db';
 import type { VocabularyEntry, FamiliarityLevel, QuranLocation } from '$lib/types';
 
 // In-memory cache of word familiarity for fast lookups during reading
@@ -12,14 +12,8 @@ function createVocabularyStore() {
 		if (!browser) return;
 
 		try {
-			const allWords = await vocabularyDB.getByFamiliarity('new')
-				.then(async (newWords) => {
-					const seen = await vocabularyDB.getByFamiliarity('seen');
-					const learning = await vocabularyDB.getByFamiliarity('learning');
-					const known = await vocabularyDB.getByFamiliarity('known');
-					const ignored = await vocabularyDB.getByFamiliarity('ignored');
-					return [...newWords, ...seen, ...learning, ...known, ...ignored];
-				});
+			// Single query to get all words (more efficient)
+			const allWords = await db.vocabulary.toArray();
 
 			const cache = new Map<string, FamiliarityLevel>();
 			for (const word of allWords) {
@@ -30,6 +24,11 @@ function createVocabularyStore() {
 		} catch (error) {
 			console.error('Failed to load vocabulary cache:', error);
 		}
+	}
+
+	// Helper to update cache reactively
+	function setCacheEntry(wordId: string, level: FamiliarityLevel) {
+		familiarityCache = new Map(familiarityCache).set(wordId, level);
 	}
 
 	return {
@@ -67,7 +66,7 @@ function createVocabularyStore() {
 				};
 
 				await vocabularyDB.upsert(entry);
-				familiarityCache.set(wordId, 'seen');
+				setCacheEntry(wordId, 'seen');
 			}
 		},
 
@@ -75,7 +74,7 @@ function createVocabularyStore() {
 			if (!browser) return;
 
 			await vocabularyDB.updateFamiliarity(wordId, level);
-			familiarityCache.set(wordId, level);
+			setCacheEntry(wordId, level);
 		},
 
 		async addToReview(wordId: string) {

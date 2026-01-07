@@ -126,5 +126,11 @@ export function getSurahById(id: number): Omit<Surah, 'ayahs'> | undefined {
 // Convert Arabic numeral to Eastern Arabic numerals
 export function toArabicNumerals(num: number): string {
 	const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-	return num.toString().split('').map(d => arabicNumerals[parseInt(d)]).join('');
+	// Handle edge cases: negative numbers, decimals, NaN
+	const safeNum = Math.abs(Math.floor(num)) || 0;
+	return safeNum
+		.toString()
+		.split('')
+		.map(d => arabicNumerals[parseInt(d, 10)])
+		.join('');
 }

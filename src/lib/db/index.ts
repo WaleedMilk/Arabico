@@ -37,10 +37,11 @@ export const vocabularyDB = {
 
 	async upsert(entry: Omit<VocabularyEntry, 'id'>): Promise<number> {
 		const existing = await this.getByWordId(entry.wordId);
-		if (existing) {
-			return db.vocabulary.update(existing.id!, entry);
+		if (existing && existing.id !== undefined) {
+			await db.vocabulary.update(existing.id, entry);
+			return existing.id;
 		}
-		return db.vocabulary.add(entry as VocabularyEntry);
+		return db.vocabulary.add(entry as VocabularyEntry) as Promise<number>;
 	},
 
 	async updateFamiliarity(wordId: string, familiarity: VocabularyEntry['familiarity']): Promise<void> {
