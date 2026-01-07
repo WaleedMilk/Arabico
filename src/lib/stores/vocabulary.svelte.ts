@@ -38,10 +38,15 @@ function createVocabularyStore() {
 					root: entry.root,
 					gloss: entry.gloss,
 					frequencyRank: entry.frequency_rank,
-					firstSeen: { surahId: 1, ayahId: 1 }, // Default, will be overwritten
+					firstSeen: { surah: 1, ayah: 1, wordIndex: 0 }, // Default, will be overwritten
 					familiarity: entry.familiarity,
 					lastReviewed: entry.last_reviewed ? new Date(entry.last_reviewed) : undefined,
-					reviewCount: entry.review_count
+					reviewCount: entry.review_count,
+					easeFactor: 2.5,
+					interval: 0,
+					consecutiveCorrect: 0,
+					encounterLocations: [],
+					difficultyScore: 0.5
 				});
 			}
 
@@ -177,6 +182,12 @@ function createVocabularyStore() {
 			return familiarityCache.get(wordId) || 'new';
 		},
 
+		// Get full entry from database (for checking nextReviewDate, etc.)
+		async getEntry(wordId: string): Promise<VocabularyEntry | undefined> {
+			if (!browser) return undefined;
+			return vocabularyDB.getByWordId(wordId);
+		},
+
 		async markSeen(wordId: string, surfaceForm: string, lemma: string, gloss: string, location: QuranLocation) {
 			if (!browser) return;
 
@@ -192,7 +203,13 @@ function createVocabularyStore() {
 					frequencyRank: 0,
 					firstSeen: location,
 					familiarity: 'seen',
-					reviewCount: 0
+					reviewCount: 0,
+					// SRS defaults
+					easeFactor: 2.5,
+					interval: 0,
+					consecutiveCorrect: 0,
+					encounterLocations: [location],
+					difficultyScore: 0.5
 				};
 
 				// Save locally first (fast)

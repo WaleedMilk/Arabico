@@ -8,12 +8,24 @@
 		ayah: number;
 		wordIndex: number;
 		onSelect?: (word: QuranWord) => void;
+		showDueIndicator?: boolean;
 	}
 
-	let { word, surah, ayah, wordIndex, onSelect }: Props = $props();
+	let { word, surah, ayah, wordIndex, onSelect, showDueIndicator = true }: Props = $props();
 
 	// Get familiarity level for this word
 	let familiarity = $derived(vocabulary.getFamiliarity(word.id));
+
+	// Check if word is due for review
+	let isDue = $derived.by(() => {
+		if (!showDueIndicator) return false;
+		if (familiarity !== 'learning' && familiarity !== 'seen') return false;
+
+		const entry = vocabulary.getEntry?.(word.id);
+		if (!entry?.nextReviewDate) return familiarity === 'seen' || familiarity === 'learning';
+
+		return new Date(entry.nextReviewDate) <= new Date();
+	});
 
 	// CSS classes based on familiarity
 	// New = golden beige (encourages learning)
@@ -55,13 +67,21 @@
 </script>
 
 <span
-	class="word-token cursor-pointer rounded px-1 py-0.5 transition-all duration-150 hover:bg-[var(--highlight-learning)] focus:outline-none focus:ring-2 focus:ring-gold/50 {familiarityClass}"
+	class="word-token relative cursor-pointer rounded px-1 py-0.5 transition-all duration-150
+	       hover:bg-[var(--highlight-learning)] focus:outline-none focus:ring-2 focus:ring-gold/50
+	       {familiarityClass}"
+	class:ring-2={isDue}
+	class:ring-gold={isDue}
 	role="button"
 	tabindex="0"
 	onclick={handleClick}
 	onkeydown={handleKeydown}
 	data-word-id={word.id}
 	data-familiarity={familiarity}
+	data-due={isDue}
 >
 	{word.text}
+	{#if isDue}
+		<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gold rounded-full animate-pulse"></span>
+	{/if}
 </span>

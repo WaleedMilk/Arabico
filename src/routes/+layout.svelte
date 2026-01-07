@@ -40,6 +40,12 @@
 					Surahs
 				</a>
 				<a
+					href="/review"
+					class="text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+				>
+					Review
+				</a>
+				<a
 					href="/vocabulary"
 					class="text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
 				>
