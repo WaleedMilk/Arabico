@@ -15,6 +15,9 @@ export interface QuranWord {
 	transliteration?: string;
 }
 
+// Serializable date type (stored as ISO string in IndexedDB)
+export type SerializableDate = string | Date;
+
 // Vocabulary entry stored in database (with SRS fields)
 export interface VocabularyEntry {
 	id?: number;
@@ -26,13 +29,13 @@ export interface VocabularyEntry {
 	frequencyRank: number;
 	firstSeen: QuranLocation;
 	familiarity: FamiliarityLevel;
-	lastReviewed?: Date;
+	lastReviewed?: SerializableDate;
 	reviewCount: number;
 
 	// SRS Algorithm Fields (SM-2 inspired)
 	easeFactor: number; // Default 2.5, range 1.3-2.5
 	interval: number; // Days until next review
-	nextReviewDate?: Date; // Calculated review date
+	nextReviewDate?: SerializableDate; // Calculated review date (stored as ISO string)
 	consecutiveCorrect: number; // Streak of correct answers
 
 	// Learning Context
@@ -151,7 +154,7 @@ export interface UserEngagement {
 	userId: string;
 	currentStreak: number;
 	longestStreak: number;
-	lastReviewDate?: Date;
+	lastReviewDate?: SerializableDate;
 	totalWordsReviewed: number;
 }
 
@@ -176,4 +179,36 @@ export interface ReviewCardData {
 	entry: VocabularyEntry;
 	primaryContext: WordOccurrence;
 	additionalContexts: WordOccurrence[];
+}
+
+// ============================================
+// QuranWBW Data Types (from qazasaz/quranwbw)
+// ============================================
+
+// Individual word from QuranWBW JSON
+export interface QuranWBWWord {
+	b: string; // Audio begin time
+	h: string; // Audio duration/end
+	c: string; // Arabic text
+	d: string; // Transliteration
+	e: string; // English translation
+}
+
+// Ayah data from QuranWBW JSON
+export interface QuranWBWAyah {
+	w: QuranWBWWord[]; // Words array
+	a: { g: string }; // Full ayah translation
+}
+
+// Full surah data from QuranWBW JSON
+export interface QuranWBWSurah {
+	[ayahNum: string]: QuranWBWAyah;
+}
+
+// Extended QuranWord with translation data
+export interface QuranWordWithTranslation extends QuranWord {
+	translation: string;
+	transliteration: string;
+	audioStart?: string;
+	audioDuration?: string;
 }

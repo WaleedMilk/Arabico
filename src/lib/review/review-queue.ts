@@ -11,7 +11,7 @@
 import { vocabularyDB } from '$lib/db';
 import type { VocabularyEntry, ReviewMode, ReviewCardData, WordOccurrence } from '$lib/types';
 import { getSurahById } from '$lib/data/surahs';
-import { getSurahAyahs } from '$lib/data/quran-sample';
+import { getSurahAyahsAsync } from '$lib/data/quran-data';
 import { calculateDifficultyScore } from './srs-algorithm';
 
 export interface ReviewQueueOptions {
@@ -128,7 +128,7 @@ async function getWordOccurrence(location: VocabularyEntry['firstSeen']): Promis
 		const surah = getSurahById(location.surah);
 		if (!surah) return null;
 
-		const ayahs = getSurahAyahs(location.surah);
+		const ayahs = await getSurahAyahsAsync(location.surah);
 		const ayah = ayahs?.find((a) => a.id === location.ayah);
 
 		if (!ayah) {

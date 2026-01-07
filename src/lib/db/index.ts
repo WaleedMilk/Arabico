@@ -102,7 +102,7 @@ export const vocabularyDB = {
 		if (entry) {
 			await db.vocabulary.update(entry.id!, {
 				familiarity,
-				lastReviewed: new Date(),
+				lastReviewed: new Date().toISOString(),
 				reviewCount: (entry.reviewCount || 0) + 1
 			});
 		}
@@ -122,9 +122,15 @@ export const vocabularyDB = {
 	): Promise<void> {
 		const entry = await this.getByWordId(wordId);
 		if (entry) {
+			// Serialize Date objects to ISO strings for IndexedDB compatibility
 			await db.vocabulary.update(entry.id!, {
-				...updates,
-				lastReviewed: new Date(),
+				easeFactor: updates.easeFactor,
+				interval: updates.interval,
+				nextReviewDate: updates.nextReviewDate.toISOString(),
+				consecutiveCorrect: updates.consecutiveCorrect,
+				familiarity: updates.familiarity,
+				difficultyScore: updates.difficultyScore,
+				lastReviewed: new Date().toISOString(),
 				reviewCount: (entry.reviewCount || 0) + 1
 			});
 		}
@@ -280,14 +286,14 @@ export const engagementDB = {
 			await db.userEngagement.update(userId, {
 				currentStreak: newStreak,
 				longestStreak: Math.max(longestStreak, existing.longestStreak),
-				lastReviewDate: new Date()
+				lastReviewDate: new Date().toISOString()
 			});
 		} else {
 			await db.userEngagement.add({
 				userId,
 				currentStreak: newStreak,
 				longestStreak: newStreak,
-				lastReviewDate: new Date(),
+				lastReviewDate: new Date().toISOString(),
 				totalWordsReviewed: 0
 			});
 		}
