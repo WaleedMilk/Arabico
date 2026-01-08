@@ -9,7 +9,8 @@
       "Bash(npm install:*)",
       "Bash(powershell -Command:*)",
       "Bash(dir:*)",
-      "Bash(npm run check:*)"
+      "Bash(npm run check:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

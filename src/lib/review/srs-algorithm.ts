@@ -5,9 +5,27 @@
  * - Root family bonus: knowing related words (same root) speeds learning
  * - Frequency adjustment: common Quranic words get longer intervals
  * - Difficulty tracking: words with poor response history get more practice
+ * - Stage tracking: new → learning → young → mature progression
+ * - Review forecast: predict upcoming review counts for timeline display
  */
 
-import type { VocabularyEntry, ReviewQuality, SRSResult } from '$lib/types';
+import type {
+	VocabularyEntry,
+	ReviewQuality,
+	SRSResult,
+	ReviewStage,
+	ReviewForecast,
+	LearningConfig
+} from '$lib/types';
+
+/**
+ * Default learning configuration
+ */
+export const DEFAULT_LEARNING_CONFIG: LearningConfig = {
+	steps: [1, 10], // 1 minute, then 10 minutes
+	graduatingInterval: 1, // First "young" interval: 1 day
+	easyInterval: 4 // Days if user hits "Easy" on new card
+};
 
 /**
  * SM-2 Quality Scale Reference:
@@ -205,4 +223,224 @@ export function getRecommendedReviewCount(dueCount: number, learningCount: numbe
 	}
 
 	return dueReview;
+}
+
+// ============================================
+// Stage & Forecast Functions
+// ============================================
+
+/**
+ * Determine the review stage of a vocabulary entry
+ *
+ * Stage definitions:
+ * - new: Never reviewed (reviewCount === 0)
+ * - learning: In learning steps (interval < 1 day)
+ * - young: Graduated, interval < 21 days
+ * - mature: Interval >= 21 days AND consecutiveCorrect >= 5
+ * - suspended: familiarity === 'ignored'
+ *
+ * @param entry - The vocabulary entry
+ * @returns The current review stage
+ */
+export function getReviewStage(entry: VocabularyEntry): ReviewStage {
+	// Suspended takes priority
+	if (entry.familiarity === 'ignored') {
+		return 'suspended';
+	}
+
+	// Never reviewed
+	if ((entry.reviewCount ?? 0) === 0) {
+		return 'new';
+	}
+
+	const interval = entry.interval ?? 0;
+	const consecutiveCorrect = entry.consecutiveCorrect ?? 0;
+
+	// In learning steps (less than 1 day interval)
+	if (interval < 1) {
+		return 'learning';
+	}
+
+	// Mature: well-established memory
+	if (interval >= 21 && consecutiveCorrect >= 5) {
+		return 'mature';
+	}
+
+	// Young: graduated but not yet mature
+	return 'young';
+}
+
+/**
+ * Check if a word has graduated from learning steps
+ *
+ * @param entry - The vocabulary entry
+ * @returns Whether the word has graduated to young/mature status
+ */
+export function isGraduated(entry: VocabularyEntry): boolean {
+	const stage = getReviewStage(entry);
+	return stage === 'young' || stage === 'mature';
+}
+
+/**
+ * Get learning step progress for words still in learning
+ *
+ * @param entry - The vocabulary entry
+ * @param config - Learning configuration
+ * @returns Object with current step index and total steps, or null if graduated
+ */
+export function getLearningProgress(
+	entry: VocabularyEntry,
+	config: LearningConfig = DEFAULT_LEARNING_CONFIG
+): { currentStep: number; totalSteps: number } | null {
+	const stage = getReviewStage(entry);
+	if (stage !== 'learning' && stage !== 'new') {
+		return null;
+	}
+
+	const reviewCount = entry.reviewCount ?? 0;
+	return {
+		currentStep: Math.min(reviewCount, config.steps.length),
+		totalSteps: config.steps.length
+	};
+}
+
+/**
+ * Generate review forecast for the next N days
+ *
+ * @param entries - All vocabulary entries to consider
+ * @param days - Number of days to forecast (default: 14)
+ * @returns Array of ReviewForecast objects, one per day
+ */
+export function generateReviewForecast(
+	entries: VocabularyEntry[],
+	days: number = 14
+): ReviewForecast[] {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	const forecast: ReviewForecast[] = [];
+
+	// Initialize forecast array for each day
+	for (let i = 0; i < days; i++) {
+		const date = new Date(today);
+		date.setDate(date.getDate() + i);
+		forecast.push({
+			date: date.toISOString().split('T')[0],
+			dueCount: 0,
+			words: []
+		});
+	}
+
+	// Categorize each entry
+	for (const entry of entries) {
+		const stage = getReviewStage(entry);
+
+		// Skip suspended entries
+		if (stage === 'suspended') continue;
+
+		// Determine which day this word is due
+		let dueDay = 0; // Default to today for new/learning
+
+		if (entry.nextReviewDate) {
+			const nextReview = new Date(entry.nextReviewDate);
+			nextReview.setHours(0, 0, 0, 0);
+
+			const diffTime = nextReview.getTime() - today.getTime();
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+			// If overdue, count as today (day 0)
+			dueDay = Math.max(0, diffDays);
+		}
+
+		// Only include if within forecast range
+		if (dueDay < days) {
+			forecast[dueDay].dueCount++;
+			forecast[dueDay].words.push({
+				id: entry.wordId,
+				stage
+			});
+		}
+	}
+
+	return forecast;
+}
+
+/**
+ * Get count of words in each stage
+ *
+ * @param entries - All vocabulary entries
+ * @returns Object with counts per stage
+ */
+export function getStageCounts(
+	entries: VocabularyEntry[]
+): Record<ReviewStage, number> {
+	const counts: Record<ReviewStage, number> = {
+		new: 0,
+		learning: 0,
+		young: 0,
+		mature: 0,
+		suspended: 0
+	};
+
+	for (const entry of entries) {
+		const stage = getReviewStage(entry);
+		counts[stage]++;
+	}
+
+	return counts;
+}
+
+/**
+ * Get words that are due for review (past their nextReviewDate)
+ *
+ * @param entries - All vocabulary entries
+ * @returns Array of entries that are due
+ */
+export function getDueEntries(entries: VocabularyEntry[]): VocabularyEntry[] {
+	const now = new Date();
+
+	return entries.filter((entry) => {
+		// Skip suspended
+		if (entry.familiarity === 'ignored') return false;
+
+		// New words are always available
+		if ((entry.reviewCount ?? 0) === 0) return true;
+
+		// Check if past due date
+		if (entry.nextReviewDate) {
+			return new Date(entry.nextReviewDate) <= now;
+		}
+
+		// No next review date set, consider it due
+		return true;
+	});
+}
+
+/**
+ * Get words available for practice (not due, but can be reviewed)
+ * Excludes words that were just reviewed (within last hour)
+ *
+ * @param entries - All vocabulary entries
+ * @returns Array of entries available for practice
+ */
+export function getPracticeEntries(entries: VocabularyEntry[]): VocabularyEntry[] {
+	const now = new Date();
+	const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+	return entries.filter((entry) => {
+		// Skip suspended
+		if (entry.familiarity === 'ignored') return false;
+
+		// Skip new words (they should be introduced through due reviews)
+		if ((entry.reviewCount ?? 0) === 0) return false;
+
+		// Skip words reviewed in the last hour
+		if (entry.lastReviewed) {
+			const lastReview = new Date(entry.lastReviewed);
+			if (lastReview > oneHourAgo) return false;
+		}
+
+		// Include all others (even if not due yet)
+		return true;
+	});
 }

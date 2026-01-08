@@ -19,22 +19,27 @@ export interface ReviewQueueOptions {
 	maxWords: number;
 	surahFilter?: number; // Only include words from specific surah
 	includeNewWords?: boolean; // Include "seen" words that haven't been reviewed
+	practiceMode?: boolean; // If true, includes non-due words for extra practice
 }
 
 /**
  * Build a prioritized review queue based on options
  */
 export async function buildReviewQueue(options: ReviewQueueOptions): Promise<VocabularyEntry[]> {
-	const { mode, maxWords, surahFilter, includeNewWords = true } = options;
+	const { mode, maxWords, surahFilter, includeNewWords = true, practiceMode = false } = options;
 
 	const now = new Date();
+	const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-	// Get all words in learning/seen state
+	// Get all words in learning/seen/known state based on mode
 	const learningWords = await vocabularyDB.getByFamiliarity('learning');
 	const seenWords = includeNewWords ? await vocabularyDB.getByFamiliarity('seen') : [];
 
+	// For practice mode, also include known words (for extra review)
+	const knownWords = practiceMode ? await vocabularyDB.getByFamiliarity('known') : [];
+
 	// Combine and filter
-	let candidates = [...learningWords, ...seenWords];
+	let candidates = [...learningWords, ...seenWords, ...knownWords];
 
 	// Apply surah filter if specified
 	if (surahFilter) {
@@ -45,14 +50,32 @@ export async function buildReviewQueue(options: ReviewQueueOptions): Promise<Voc
 		);
 	}
 
-	// Filter to due words (nextReviewDate <= now or not set)
-	const dueWords = candidates.filter((w) => {
-		if (!w.nextReviewDate) return true; // Never reviewed
-		return new Date(w.nextReviewDate) <= now;
-	});
+	let wordsToReview: VocabularyEntry[];
+
+	if (practiceMode) {
+		// Practice mode: exclude recently reviewed words, include non-due words
+		wordsToReview = candidates.filter((w) => {
+			// Skip words reviewed in the last hour
+			if (w.lastReviewed) {
+				const lastReview = new Date(w.lastReviewed);
+				if (lastReview > oneHourAgo) return false;
+			}
+
+			// Skip completely new words (they should be introduced via normal reviews)
+			if ((w.reviewCount ?? 0) === 0) return false;
+
+			return true;
+		});
+	} else {
+		// Normal mode: filter to due words (nextReviewDate <= now or not set)
+		wordsToReview = candidates.filter((w) => {
+			if (!w.nextReviewDate) return true; // Never reviewed
+			return new Date(w.nextReviewDate) <= now;
+		});
+	}
 
 	// Sort by priority
-	const sortedWords = sortByPriority(dueWords, mode);
+	const sortedWords = sortByPriority(wordsToReview, mode, practiceMode);
 
 	return sortedWords.slice(0, maxWords);
 }
@@ -60,10 +83,36 @@ export async function buildReviewQueue(options: ReviewQueueOptions): Promise<Voc
 /**
  * Sort words by priority based on review mode
  */
-function sortByPriority(words: VocabularyEntry[], mode: ReviewMode): VocabularyEntry[] {
+function sortByPriority(
+	words: VocabularyEntry[],
+	mode: ReviewMode,
+	practiceMode: boolean = false
+): VocabularyEntry[] {
 	const now = Date.now();
 
 	return words.sort((a, b) => {
+		if (practiceMode) {
+			// In practice mode, prioritize by:
+			// 1. Difficulty (harder words first)
+			// 2. Time since last review (longest first)
+			const aDifficulty = a.difficultyScore ?? calculateDifficultyScore(a);
+			const bDifficulty = b.difficultyScore ?? calculateDifficultyScore(b);
+
+			const aLastReview = a.lastReviewed ? new Date(a.lastReviewed).getTime() : 0;
+			const bLastReview = b.lastReviewed ? new Date(b.lastReviewed).getTime() : 0;
+
+			// Calculate time since last review (longer = higher priority)
+			const aTimeSince = now - aLastReview;
+			const bTimeSince = now - bLastReview;
+
+			// Combine difficulty and time since last review
+			const aPriority = aDifficulty * 0.5 + (aTimeSince / (1000 * 60 * 60 * 24)) * 0.5;
+			const bPriority = bDifficulty * 0.5 + (bTimeSince / (1000 * 60 * 60 * 24)) * 0.5;
+
+			return bPriority - aPriority;
+		}
+
+		// Normal mode: prioritize by overdue time and difficulty
 		// Calculate overdue time (higher = more overdue)
 		const aOverdue = a.nextReviewDate ? now - new Date(a.nextReviewDate).getTime() : now;
 		const bOverdue = b.nextReviewDate ? now - new Date(b.nextReviewDate).getTime() : now;

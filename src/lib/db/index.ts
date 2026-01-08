@@ -210,6 +210,11 @@ export const vocabularyDB = {
 			stats[entry.familiarity]++;
 		}
 		return stats;
+	},
+
+	// Get all vocabulary entries
+	async getAll(): Promise<VocabularyEntry[]> {
+		return db.vocabulary.toArray();
 	}
 };
 

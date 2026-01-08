@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
-	import type { QuranWord, QuranWordWithTranslation } from '$lib/types';
+	import type { QuranWord, QuranWordWithTranslation, VerbInfo } from '$lib/types';
+	import VerbConjugation from './VerbConjugation.svelte';
 
 	interface Props {
 		word: QuranWord | null;
@@ -10,10 +11,12 @@
 		surahId?: number;
 		ayahNum?: number;
 		wordIndex?: number;
+		isCommonWord?: boolean;
+		verbInfo?: VerbInfo;
 		onClose: () => void;
 	}
 
-	let { word, gloss = '', lemma = '', transliteration = '', surahId, ayahNum, wordIndex, onClose }: Props = $props();
+	let { word, gloss = '', lemma = '', transliteration = '', surahId, ayahNum, wordIndex, isCommonWord = false, verbInfo, onClose }: Props = $props();
 
 	let familiarity = $derived(word ? vocabulary.getFamiliarity(word.id) : 'new');
 	let isPlaying = $state(false);
@@ -135,10 +138,20 @@
 				{:else}
 					<p class="meaning-text muted">Translation loading...</p>
 				{/if}
+				{#if isCommonWord}
+					<div class="translation-source">
+						<span class="source-badge core">Core Vocabulary</span>
+					</div>
+				{/if}
 			</div>
 
+			<!-- Verb Conjugation Info -->
+			{#if verbInfo && word}
+				<VerbConjugation {verbInfo} conjugatedForm={word.text} />
+			{/if}
+
 			<!-- Grammatical Info -->
-			{#if lemma && lemma !== word.text}
+			{#if lemma && lemma !== word.text && !verbInfo}
 				<div class="grammar-section">
 					<div class="grammar-item">
 						<span class="grammar-label">Root Form</span>
@@ -557,6 +570,28 @@
 	.location-text {
 		font-size: 0.75rem;
 		color: var(--text-muted);
+	}
+
+	/* Translation source badge */
+	.translation-source {
+		display: flex;
+		justify-content: center;
+		margin-top: 0.75rem;
+	}
+
+	.source-badge {
+		font-size: 0.65rem;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-weight: 500;
+	}
+
+	.source-badge.core {
+		background: rgba(var(--color-gold-rgb, 196, 169, 98), 0.2);
+		color: var(--color-gold, #C4A962);
+		border: 1px solid rgba(var(--color-gold-rgb, 196, 169, 98), 0.3);
 	}
 
 	/* Mobile responsive */

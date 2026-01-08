@@ -117,7 +117,11 @@ function createVocabularyStore() {
 				frequency_rank: entry.frequencyRank,
 				first_seen: new Date().toISOString(),
 				familiarity: entry.familiarity,
-				last_reviewed: entry.lastReviewed?.toISOString(),
+				last_reviewed: entry.lastReviewed
+					? typeof entry.lastReviewed === 'string'
+						? entry.lastReviewed
+						: entry.lastReviewed.toISOString()
+					: undefined,
 				review_count: entry.reviewCount
 			};
 
@@ -155,7 +159,7 @@ function createVocabularyStore() {
 				const localEntries = await db.vocabulary.toArray();
 
 				// Convert to Supabase format
-				const dbEntries: DbVocabularyEntry[] = localEntries.map(entry => ({
+				const dbEntries: DbVocabularyEntry[] = localEntries.map((entry) => ({
 					user_id: userId!,
 					word_id: entry.wordId,
 					surface_form: entry.surfaceForm,
@@ -165,7 +169,11 @@ function createVocabularyStore() {
 					frequency_rank: entry.frequencyRank,
 					first_seen: new Date().toISOString(),
 					familiarity: entry.familiarity,
-					last_reviewed: entry.lastReviewed?.toISOString(),
+					last_reviewed: entry.lastReviewed
+						? typeof entry.lastReviewed === 'string'
+							? entry.lastReviewed
+							: entry.lastReviewed.toISOString()
+						: undefined,
 					review_count: entry.reviewCount
 				}));
 

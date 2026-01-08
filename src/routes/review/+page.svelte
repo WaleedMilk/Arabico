@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
+	import { page } from '$app/stores';
 	import { reviewStore } from '$lib/stores/review.svelte';
 	import { engagement } from '$lib/stores/engagement.svelte';
 	import StreakDisplay from '$lib/components/review/StreakDisplay.svelte';
@@ -9,6 +10,9 @@
 	import type { ReviewMode } from '$lib/types';
 
 	let selectedMode = $state<ReviewMode | null>(null);
+
+	// Check if practice mode was requested via URL param
+	let isPracticeMode = $derived($page.url.searchParams.get('practice') === 'true');
 
 	// Direction slider for contextual mode (0-100, percentage of Arabic→English)
 	let directionRatio = $state(50);
@@ -74,7 +78,8 @@
 
 	function startReview() {
 		if (selectedMode) {
-			goto(`/review/${selectedMode}`);
+			const practiceParam = isPracticeMode ? '?practice=true' : '';
+			goto(`/review/${selectedMode}${practiceParam}`);
 		}
 	}
 </script>
@@ -89,7 +94,27 @@
 <div class="review-hub max-w-lg mx-auto space-y-8">
 	<!-- Header with streak -->
 	<header class="text-center space-y-4">
-		<h1 class="text-2xl font-medium text-[var(--text-primary)]">Review</h1>
+		<div class="flex items-center justify-between">
+			<a href="/" class="nav-link">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+				</svg>
+			</a>
+			<h1 class="text-2xl font-medium text-[var(--text-primary)]">
+				{isPracticeMode ? 'Practice Mode' : 'Review'}
+			</h1>
+			<a href="/progress" class="nav-link" title="View Progress">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+				</svg>
+			</a>
+		</div>
+
+		{#if isPracticeMode}
+			<div class="practice-badge">
+				Extra Practice - Not affecting SRS schedule
+			</div>
+		{/if}
 
 		<div class="py-4">
 			<StreakDisplay size="large" />
@@ -201,12 +226,24 @@
 			<p class="text-sm text-[var(--text-muted)] mt-1">
 				Keep reading to add more words to your vocabulary.
 			</p>
-			<a
-				href="/surah/1"
-				class="inline-block mt-6 px-6 py-2 rounded-lg bg-[var(--accent-color)] text-white font-medium hover:bg-sepia-600 transition-colors"
-			>
-				Continue Reading
-			</a>
+
+			<div class="mt-6 flex flex-col gap-3">
+				<a
+					href="/surah/1"
+					class="inline-block px-6 py-2 rounded-lg bg-[var(--accent-color)] text-white font-medium hover:bg-sepia-600 transition-colors"
+				>
+					Continue Reading
+				</a>
+
+				{#if reviewStore.canPracticeMore}
+					<a
+						href="/review?practice=true"
+						class="inline-block px-6 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] font-medium hover:bg-[var(--bg-secondary)] transition-colors"
+					>
+						Practice More Words
+					</a>
+				{/if}
+			</div>
 		</div>
 	{/if}
 
@@ -219,6 +256,37 @@
 </div>
 
 <style>
+	.nav-link {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		color: var(--text-secondary);
+		transition: all 0.2s ease;
+	}
+
+	.nav-link:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.practice-badge {
+		display: inline-block;
+		padding: 0.375rem 0.75rem;
+		border-radius: 9999px;
+		background: rgba(59, 130, 246, 0.1);
+		color: #3b82f6;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	:global(.dark) .practice-badge {
+		background: rgba(59, 130, 246, 0.2);
+		color: #60a5fa;
+	}
+
 	.direction-slider {
 		-webkit-appearance: none;
 		appearance: none;

@@ -2,10 +2,11 @@
  * Review Store for Arabico
  *
  * Manages review session state using Svelte 5 runes:
- * - Review queue
+ * - Review queue (due reviews and practice mode)
  * - Current session tracking
  * - Due word count
  * - Response recording
+ * - Review forecast for timeline
  */
 
 import { browser } from '$app/environment';
@@ -14,7 +15,10 @@ import {
 	calculateNextReview,
 	calculateDifficultyScore,
 	shouldPromoteToKnown,
-	calculateRootFamilyBonus
+	calculateRootFamilyBonus,
+	generateReviewForecast,
+	getStageCounts,
+	getReviewStage
 } from '$lib/review/srs-algorithm';
 import { buildReviewQueue, buildReviewCardData, getDueWordCount } from '$lib/review/review-queue';
 import type {
@@ -22,7 +26,9 @@ import type {
 	ReviewMode,
 	ReviewQuality,
 	ReviewSession,
-	ReviewCardData
+	ReviewCardData,
+	ReviewForecast,
+	ReviewStage
 } from '$lib/types';
 
 function createReviewStore() {
@@ -34,6 +40,20 @@ function createReviewStore() {
 	let isLoading = $state(false);
 	let dueCount = $state(0);
 	let sessionStats = $state({ reviewed: 0, correct: 0 });
+
+	// Practice mode state
+	let isPracticeMode = $state(false);
+	let dueCompletedThisSession = $state(false);
+
+	// Forecast and stage counts
+	let forecast = $state<ReviewForecast[]>([]);
+	let stageCounts = $state<Record<ReviewStage, number>>({
+		new: 0,
+		learning: 0,
+		young: 0,
+		mature: 0,
+		suspended: 0
+	});
 
 	return {
 		// Getters
@@ -67,13 +87,30 @@ function createReviewStore() {
 		get progress() {
 			return queue.length > 0 ? (currentIndex / queue.length) * 100 : 0;
 		},
+		get isPracticeMode() {
+			return isPracticeMode;
+		},
+		get dueCompletedThisSession() {
+			return dueCompletedThisSession;
+		},
+		get forecast() {
+			return forecast;
+		},
+		get stageCounts() {
+			return stageCounts;
+		},
+		get canPracticeMore() {
+			// Can practice if due reviews are done or if there are words to practice
+			return dueCompletedThisSession || dueCount === 0;
+		},
 
 		/**
-		 * Initialize the store - load due count
+		 * Initialize the store - load due count and forecast
 		 */
 		async init() {
 			if (!browser) return;
 			await this.refreshDueCount();
+			await this.refreshForecast();
 		},
 
 		/**
@@ -85,7 +122,22 @@ function createReviewStore() {
 		},
 
 		/**
-		 * Start a new review session
+		 * Refresh the review forecast and stage counts
+		 */
+		async refreshForecast(days: number = 14) {
+			if (!browser) return;
+
+			try {
+				const allEntries = await vocabularyDB.getAll();
+				forecast = generateReviewForecast(allEntries, days);
+				stageCounts = getStageCounts(allEntries);
+			} catch (error) {
+				console.error('Error refreshing forecast:', error);
+			}
+		},
+
+		/**
+		 * Start a new review session (due reviews)
 		 */
 		async startSession(mode: ReviewMode, maxWords: number = 15) {
 			if (!browser) return;
@@ -93,6 +145,7 @@ function createReviewStore() {
 			isLoading = true;
 			currentIndex = 0;
 			sessionStats = { reviewed: 0, correct: 0 };
+			isPracticeMode = false;
 
 			try {
 				// Build review queue
@@ -100,6 +153,49 @@ function createReviewStore() {
 					mode,
 					maxWords,
 					includeNewWords: mode !== 'quick'
+				});
+
+				// Build card data with contextual information
+				cardData = await Promise.all(queue.map(buildReviewCardData));
+
+				// Create session record
+				const userId = localStorage.getItem('arabico_anon_id') || crypto.randomUUID();
+				if (!localStorage.getItem('arabico_anon_id')) {
+					localStorage.setItem('arabico_anon_id', userId);
+				}
+
+				currentSession = {
+					userId,
+					mode,
+					startTime: new Date(),
+					wordsReviewed: 0,
+					wordsCorrect: 0,
+					duration: 0
+				};
+			} finally {
+				isLoading = false;
+			}
+		},
+
+		/**
+		 * Start a practice session (non-due reviews)
+		 * Can only be called after due reviews are completed or when no reviews are due
+		 */
+		async startPracticeSession(mode: ReviewMode, maxWords: number = 10) {
+			if (!browser) return;
+
+			isLoading = true;
+			currentIndex = 0;
+			sessionStats = { reviewed: 0, correct: 0 };
+			isPracticeMode = true;
+
+			try {
+				// Build practice queue - excludes words not due and recently reviewed
+				queue = await buildReviewQueue({
+					mode,
+					maxWords,
+					includeNewWords: false,
+					practiceMode: true // Signal to queue builder to use practice logic
 				});
 
 				// Build card data with contextual information
@@ -210,15 +306,22 @@ function createReviewStore() {
 				duration
 			});
 
-			// Refresh due count
+			// Mark due reviews as completed if this wasn't a practice session
+			if (!isPracticeMode) {
+				dueCompletedThisSession = true;
+			}
+
+			// Refresh due count and forecast
 			await this.refreshDueCount();
+			await this.refreshForecast();
 
 			// Return final stats
 			return {
 				wordsReviewed: sessionStats.reviewed,
 				wordsCorrect: sessionStats.correct,
 				duration,
-				accuracy: sessionStats.reviewed > 0 ? sessionStats.correct / sessionStats.reviewed : 0
+				accuracy: sessionStats.reviewed > 0 ? sessionStats.correct / sessionStats.reviewed : 0,
+				wasPractice: isPracticeMode
 			};
 		},
 
@@ -231,6 +334,14 @@ function createReviewStore() {
 			currentIndex = 0;
 			currentSession = null;
 			sessionStats = { reviewed: 0, correct: 0 };
+			isPracticeMode = false;
+		},
+
+		/**
+		 * Reset the "due completed" flag (e.g., on new day)
+		 */
+		resetDueCompletedFlag() {
+			dueCompletedThisSession = false;
 		}
 	};
 }

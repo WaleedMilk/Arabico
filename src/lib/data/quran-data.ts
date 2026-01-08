@@ -3,7 +3,13 @@
  *
  * Loads word-by-word Quran data from bundled JSON files.
  * Uses lazy loading - only fetches surah data when needed.
- * Arabic text from QuranWBW, translations from separate literal gloss file.
+ *
+ * Translation Priority:
+ * 1. Common vocabulary (80% file) - curated translations for common words
+ * 2. WBW translations file - literal glosses
+ * 3. QuranWBW embedded translations - fallback
+ *
+ * For verbs, also stores conjugation info (VerbInfo) for display.
  */
 
 import type {
@@ -11,8 +17,16 @@ import type {
 	QuranWord,
 	QuranWBWSurah,
 	QuranWBWAyah,
-	QuranWordWithTranslation
+	QuranWordWithTranslation,
+	VerbInfo
 } from '$lib/types';
+import {
+	loadCommonVocabulary,
+	getCommonTranslation,
+	isVocabularyLoaded,
+	type VocabularyIndex,
+	type VerbMatch
+} from '$lib/data/common-vocabulary';
 
 // Cache for loaded surahs
 const surahCache = new Map<number, Ayah[]>();
@@ -21,6 +35,10 @@ const loadingPromises = new Map<number, Promise<Ayah[] | null>>();
 // Cache for word-by-word translations (loaded once)
 let wbwTranslations: Record<string, string> | null = null;
 let wbwLoadPromise: Promise<Record<string, string> | null> | null = null;
+
+// Common vocabulary index (loaded once)
+let commonVocabIndex: VocabularyIndex | null = null;
+let commonVocabLoadPromise: Promise<VocabularyIndex> | null = null;
 
 /**
  * Load the English word-by-word translation file
@@ -48,7 +66,40 @@ async function loadWbwTranslations(): Promise<Record<string, string> | null> {
 }
 
 /**
+ * Load the common vocabulary index
+ */
+async function loadCommonVocab(): Promise<VocabularyIndex> {
+	if (commonVocabIndex) return commonVocabIndex;
+	if (commonVocabLoadPromise) return commonVocabLoadPromise;
+
+	commonVocabLoadPromise = loadCommonVocabulary().then((index) => {
+		commonVocabIndex = index;
+		return index;
+	});
+
+	return commonVocabLoadPromise;
+}
+
+/**
+ * Build VerbInfo from a verb match result
+ */
+function buildVerbInfo(verbMatch: VerbMatch): VerbInfo {
+	return {
+		root: verbMatch.verb.rootLetters,
+		rootForm: verbMatch.verb.root,
+		meaning: verbMatch.verb.meaning,
+		matchedForm: verbMatch.matchedForm,
+		baseForm: verbMatch.baseForm
+	};
+}
+
+/**
  * Transform QuranWBW data format to our Ayah format
+ *
+ * Translation priority:
+ * 1. Common vocabulary (80% file) - for common words/verbs
+ * 2. WBW translations file - literal glosses
+ * 3. QuranWBW embedded translations - fallback
  */
 function transformSurahData(
 	surahId: number,
@@ -59,7 +110,7 @@ function transformSurahData(
 
 	// QuranWBW uses string keys for ayah numbers
 	const ayahNumbers = Object.keys(data)
-		.filter(key => !isNaN(Number(key)))
+		.filter((key) => !isNaN(Number(key)))
 		.map(Number)
 		.sort((a, b) => a - b);
 
@@ -69,21 +120,43 @@ function transformSurahData(
 
 		const words: QuranWordWithTranslation[] = ayahData.w.map((word, index) => {
 			const wordId = `${surahId}:${ayahNum}:${index + 1}`;
-			// Use literal translation from separate file, fallback to QuranWBW
-			const translation = translations?.[wordId] ?? word.e;
+			const arabicText = word.c;
+
+			// Priority 1: Check common vocabulary
+			const commonResult = getCommonTranslation(arabicText);
+
+			let translation: string;
+			let isCommonWord = false;
+			let verbInfo: VerbInfo | undefined;
+
+			if (commonResult) {
+				// Found in common vocabulary
+				translation = commonResult.translation;
+				isCommonWord = true;
+
+				// If it's a verb, store conjugation info
+				if (commonResult.isVerb && commonResult.verbMatch) {
+					verbInfo = buildVerbInfo(commonResult.verbMatch);
+				}
+			} else {
+				// Priority 2 & 3: WBW translations or QuranWBW fallback
+				translation = translations?.[wordId] ?? word.e;
+			}
 
 			return {
 				id: wordId,
-				text: word.c,
+				text: arabicText,
 				transliteration: word.d,
 				translation,
 				audioStart: word.b,
-				audioDuration: word.h
+				audioDuration: word.h,
+				isCommonWord,
+				verbInfo
 			};
 		});
 
 		// Combine all word texts for full ayah text
-		const fullText = words.map(w => w.text).join(' ');
+		const fullText = words.map((w) => w.text).join(' ');
 
 		ayahs.push({
 			id: ayahNum,
@@ -113,10 +186,11 @@ async function loadSurahData(surahId: number): Promise<Ayah[] | null> {
 	// Start loading
 	const loadPromise = (async () => {
 		try {
-			// Load both surah data and translations in parallel
+			// Load surah data, WBW translations, and common vocabulary in parallel
 			const [surahResponse, translations] = await Promise.all([
 				fetch(`/data/surahs/${surahId}.json`),
-				loadWbwTranslations()
+				loadWbwTranslations(),
+				loadCommonVocab() // Ensure common vocab is loaded
 			]);
 
 			if (!surahResponse.ok) {

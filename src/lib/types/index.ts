@@ -174,6 +174,34 @@ export interface AppState {
 // Review & Learning System Types
 // ============================================
 
+/**
+ * Anki-style review stages (more granular than FamiliarityLevel)
+ * - new: Never reviewed
+ * - learning: In learning steps (interval < 1 day)
+ * - young: Graduated, but interval < 21 days
+ * - mature: Well-known, interval >= 21 days, consecutiveCorrect >= 5
+ * - suspended: User manually suspended (same as 'ignored')
+ */
+export type ReviewStage = 'new' | 'learning' | 'young' | 'mature' | 'suspended';
+
+/**
+ * Review forecast for timeline visualization
+ */
+export interface ReviewForecast {
+	date: string; // ISO date string (YYYY-MM-DD)
+	dueCount: number;
+	words: Array<{ id: string; stage: ReviewStage }>;
+}
+
+/**
+ * Learning step configuration (minutes between steps)
+ */
+export interface LearningConfig {
+	steps: number[]; // Minutes between learning steps, e.g., [1, 10]
+	graduatingInterval: number; // Days for first "young" interval
+	easyInterval: number; // Days if user hits "Easy" on new card
+}
+
 // Review modes available
 export type ReviewMode = 'contextual' | 'quick' | 'recognition' | 'recall';
 
@@ -260,10 +288,22 @@ export interface QuranWBWSurah {
 	[ayahNum: string]: QuranWBWAyah;
 }
 
+// Verb conjugation information (for display in word panel and review)
+export interface VerbInfo {
+	root: string; // Spaced root letters (e.g., "ق و ل")
+	rootForm: string; // Root form with diacritics (e.g., "قَالَ")
+	meaning: string; // English meaning
+	matchedForm: 'past' | 'imperfect' | 'imperative' | 'activeParticiple' | 'verbalNoun' | 'conjugated';
+	baseForm: string; // The base form this conjugation derives from
+}
+
 // Extended QuranWord with translation data
 export interface QuranWordWithTranslation extends QuranWord {
 	translation: string;
 	transliteration: string;
 	audioStart?: string;
 	audioDuration?: string;
+	// Additional data from common vocabulary
+	isCommonWord?: boolean; // True if translation comes from 80% vocabulary
+	verbInfo?: VerbInfo; // Present if this is a verb with known conjugation
 }
