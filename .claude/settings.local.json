@@ -5,7 +5,11 @@
       "Bash(node scripts/download-quran-data.js:*)",
       "Bash(cat:*)",
       "Bash(wc:*)",
-      "Bash(npm run test:run:*)"
+      "Bash(npm run test:run:*)",
+      "Bash(npm install:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(dir:*)",
+      "Bash(npm run check:*)"
     ]
   }
 }

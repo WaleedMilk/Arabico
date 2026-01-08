@@ -16,6 +16,8 @@ export default defineConfig({
 				theme_color: '#8B7355',
 				background_color: '#FAF7F2',
 				display: 'standalone',
+				start_url: '/',
+				scope: '/',
 				icons: [
 					{
 						src: '/icon-192.png',
@@ -30,7 +32,24 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
+				navigateFallback: null,
+				runtimeCaching: [
+					{
+						urlPattern: /^https:\/\/.*\.json$/,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'quran-data-cache',
+							expiration: {
+								maxEntries: 200,
+								maxAgeSeconds: 60 * 60 * 24 * 30
+							}
+						}
+					}
+				]
+			},
+			devOptions: {
+				enabled: false
 			}
 		})
 	]

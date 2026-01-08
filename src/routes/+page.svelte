@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { surahList, toArabicNumerals } from '$lib/data/surahs';
+	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
 </script>
 
 <svelte:head>
@@ -7,14 +8,18 @@
 </svelte:head>
 
 <div class="space-y-8">
-	<!-- Hero Section -->
-	<section class="py-8 text-center">
-		<h1 class="font-arabic text-4xl text-[var(--text-primary)] mb-2">القرآن الكريم</h1>
-		<p class="text-lg text-[var(--text-secondary)] italic">The Noble Quran</p>
-		<p class="mt-4 text-[var(--text-muted)] max-w-lg mx-auto">
-			Learn Quranic Arabic through contextual vocabulary exposure.
-			Tap any word to see its meaning and track your progress.
-		</p>
+	<!-- Hero Section with Three.js Background -->
+	<section class="hero-section relative py-16 text-center overflow-hidden">
+		<ThreeBackground class="hero-canvas" />
+
+		<div class="hero-content relative z-10">
+			<h1 class="font-arabic text-5xl text-[var(--text-primary)] mb-3 drop-shadow-sm">القرآن الكريم</h1>
+			<p class="text-xl text-[var(--text-secondary)] italic mb-4">The Noble Quran</p>
+			<p class="text-[var(--text-muted)] max-w-lg mx-auto leading-relaxed">
+				Learn Quranic Arabic through contextual vocabulary exposure.
+				Tap any word to see its meaning and track your progress.
+			</p>
+		</div>
 	</section>
 
 	<!-- Surah Grid -->
@@ -85,3 +90,52 @@
 		</ul>
 	</section>
 </div>
+
+<style>
+	.hero-section {
+		min-height: 280px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: -1rem -1rem 0 -1rem;
+		padding-left: 1rem;
+		padding-right: 1rem;
+		background: linear-gradient(
+			180deg,
+			transparent 0%,
+			rgba(250, 247, 242, 0.5) 100%
+		);
+	}
+
+	:global(.dark) .hero-section {
+		background: linear-gradient(
+			180deg,
+			transparent 0%,
+			rgba(26, 21, 18, 0.5) 100%
+		);
+	}
+
+	.hero-content {
+		padding: 2rem 1rem;
+	}
+
+	:global(.hero-canvas) {
+		opacity: 0.8;
+	}
+
+	@media (max-width: 640px) {
+		.hero-section {
+			min-height: 220px;
+			padding-top: 2rem;
+			padding-bottom: 2rem;
+		}
+
+		.hero-content h1 {
+			font-size: 2.5rem;
+		}
+
+		.hero-content p {
+			font-size: 1rem;
+		}
+	}
+</style>
