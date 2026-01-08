@@ -120,7 +120,7 @@
 	}
 
 	:global(.hero-canvas) {
-		opacity: 0.8;
+		opacity: 0.9;
 	}
 
 	@media (max-width: 640px) {

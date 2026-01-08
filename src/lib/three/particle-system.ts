@@ -150,8 +150,8 @@ export class ThreadMeshParticleSystem {
 					float r = distance(gl_PointCoord, vec2(0.5));
 					if (r > 0.5) discard;
 
-					float alpha = (1.0 - smoothstep(0.3, 0.5, r)) * vAlpha;
-					gl_FragColor = vec4(color, alpha * 0.8);
+					float alpha = (1.0 - smoothstep(0.2, 0.5, r)) * vAlpha;
+					gl_FragColor = vec4(color, alpha * 0.95);
 				}
 			`,
 			transparent: true,
@@ -173,7 +173,7 @@ export class ThreadMeshParticleSystem {
 		const material = new THREE.LineBasicMaterial({
 			color: THEME_COLORS.sepia500,
 			transparent: true,
-			opacity: 0.3,
+			opacity: 0.45,
 			blending: THREE.AdditiveBlending
 		});
 

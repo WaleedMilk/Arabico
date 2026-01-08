@@ -5,10 +5,16 @@
 	// Props
 	let {
 		class: className = '',
-		reducedMotion = false
+		reducedMotion = false,
+		position = 'center',
+		size = 'full',
+		intensity = 1.0
 	}: {
 		class?: string;
 		reducedMotion?: boolean;
+		position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+		size?: 'full' | 'small' | 'medium';
+		intensity?: number;
 	} = $props();
 
 	let canvas: HTMLCanvasElement;
@@ -73,13 +79,27 @@
 				height: rect.height
 			});
 
-			// Create particle system
+			// Adjust settings based on size prop
+			const sizeMultiplier = size === 'small' ? 0.5 : size === 'medium' ? 0.7 : 1.0;
+			const particleCount = Math.floor(settings.particleCount * sizeMultiplier);
+
+			// Create particle system with adjusted settings
 			particles = new particleSystem.ThreadMeshParticleSystem({
-				particleCount: settings.particleCount,
+				particleCount,
 				maxConnections: settings.maxConnections,
-				connectionDistance: settings.connectionDistance
+				connectionDistance: settings.connectionDistance * sizeMultiplier,
+				emissionRadius: size === 'small' ? 2.5 : size === 'medium' ? 3.2 : 4,
+				particleSize: 0.045 * intensity // Increased from 0.03
 			});
 			sceneContext.scene.add(particles.particlesGroup);
+
+			// Offset camera for corner positions
+			if (position !== 'center') {
+				const offsetX = position.includes('left') ? -3 : position.includes('right') ? 3 : 0;
+				const offsetY = position.includes('top') ? 1.5 : position.includes('bottom') ? -1.5 : 0;
+				sceneContext.camera.position.set(offsetX, 2 + offsetY, 6);
+				sceneContext.camera.lookAt(offsetX * 0.5, offsetY * 0.3, 0);
+			}
 
 			// Create mouse controller
 			mouse = new mouseController.MouseController();
@@ -161,6 +181,12 @@
 <div
 	bind:this={container}
 	class="three-background {className}"
+	class:corner-top-left={position === 'top-left'}
+	class:corner-top-right={position === 'top-right'}
+	class:corner-bottom-left={position === 'bottom-left'}
+	class:corner-bottom-right={position === 'bottom-right'}
+	class:size-small={size === 'small'}
+	class:size-medium={size === 'medium'}
 	aria-hidden="true"
 >
 	<canvas bind:this={canvas}></canvas>
@@ -180,6 +206,46 @@
 		z-index: 0;
 	}
 
+	/* Corner positioning */
+	.three-background.corner-top-left,
+	.three-background.corner-top-right,
+	.three-background.corner-bottom-left,
+	.three-background.corner-bottom-right {
+		position: fixed;
+		inset: auto;
+	}
+
+	.three-background.corner-top-left {
+		top: 0;
+		left: 0;
+	}
+
+	.three-background.corner-top-right {
+		top: 0;
+		right: 0;
+	}
+
+	.three-background.corner-bottom-left {
+		bottom: 0;
+		left: 0;
+	}
+
+	.three-background.corner-bottom-right {
+		bottom: 0;
+		right: 0;
+	}
+
+	/* Size variants */
+	.three-background.size-small {
+		width: 200px;
+		height: 200px;
+	}
+
+	.three-background.size-medium {
+		width: 300px;
+		height: 300px;
+	}
+
 	.three-background canvas {
 		width: 100%;
 		height: 100%;
@@ -191,8 +257,8 @@
 		inset: 0;
 		background: radial-gradient(
 			ellipse at 50% 30%,
-			rgba(196, 169, 98, 0.15) 0%,
-			rgba(139, 115, 85, 0.08) 40%,
+			rgba(196, 169, 98, 0.2) 0%,
+			rgba(139, 115, 85, 0.12) 40%,
 			transparent 70%
 		);
 	}
@@ -200,8 +266,8 @@
 	:global(.dark) .fallback-gradient {
 		background: radial-gradient(
 			ellipse at 50% 30%,
-			rgba(196, 169, 98, 0.1) 0%,
-			rgba(139, 115, 85, 0.05) 40%,
+			rgba(196, 169, 98, 0.15) 0%,
+			rgba(139, 115, 85, 0.08) 40%,
 			transparent 70%
 		);
 	}

@@ -9,6 +9,7 @@
 	import SurahHeader from '$lib/components/reader/SurahHeader.svelte';
 	import AyahDisplay from '$lib/components/reader/AyahDisplay.svelte';
 	import WordDetailPanel from '$lib/components/reader/WordDetailPanel.svelte';
+	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
 	import type { QuranWord, Ayah } from '$lib/types';
 
 	// Get surah ID from URL (handle invalid IDs)
@@ -89,6 +90,9 @@
 </svelte:head>
 
 {#if surah}
+	<!-- Decorative particle background in corner -->
+	<ThreeBackground position="bottom-right" size="medium" intensity={0.8} class="reader-particles" />
+
 	<!-- Main layout with panel -->
 	<div class="reader-layout" class:panel-open={isPanelOpen}>
 		<!-- Word Detail Panel (slides from left) -->
@@ -367,5 +371,16 @@
 		.nav-link {
 			padding: 0.5rem;
 		}
+
+		/* Hide particles on mobile to reduce distraction */
+		:global(.reader-particles) {
+			display: none;
+		}
+	}
+
+	/* Particle styling for reader */
+	:global(.reader-particles) {
+		opacity: 0.6;
+		z-index: -1;
 	}
 </style>

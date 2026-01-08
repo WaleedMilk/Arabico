@@ -5,6 +5,7 @@
 	import { reviewStore } from '$lib/stores/review.svelte';
 	import { engagement } from '$lib/stores/engagement.svelte';
 	import StreakDisplay from '$lib/components/review/StreakDisplay.svelte';
+	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
 	import type { ReviewMode } from '$lib/types';
 
 	let selectedMode = $state<ReviewMode | null>(null);
@@ -81,6 +82,9 @@
 <svelte:head>
 	<title>Review - Arabico</title>
 </svelte:head>
+
+<!-- Decorative particle background in corner -->
+<ThreeBackground position="bottom-left" size="medium" intensity={0.8} class="review-particles" />
 
 <div class="review-hub max-w-lg mx-auto space-y-8">
 	<!-- Header with streak -->
@@ -263,6 +267,19 @@
 		to {
 			opacity: 1;
 			transform: translateY(0);
+		}
+	}
+
+	/* Particle styling for review page */
+	:global(.review-particles) {
+		opacity: 0.5;
+		z-index: -1;
+	}
+
+	/* Hide particles on mobile */
+	@media (max-width: 768px) {
+		:global(.review-particles) {
+			display: none;
 		}
 	}
 </style>
