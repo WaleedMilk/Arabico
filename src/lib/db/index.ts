@@ -262,6 +262,10 @@ export const reviewSessionDB = {
 		return id;
 	},
 
+	async getById(id: string): Promise<ReviewSession | undefined> {
+		return db.reviewSessions.get(id);
+	},
+
 	async update(id: string, updates: Partial<ReviewSession>): Promise<void> {
 		await db.reviewSessions.update(id, updates);
 	},

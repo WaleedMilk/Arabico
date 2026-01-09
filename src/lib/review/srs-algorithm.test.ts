@@ -35,6 +35,9 @@ function createMockEntry(overrides: Partial<VocabularyEntry> = {}): VocabularyEn
 		consecutiveCorrect: 0,
 		reviewCount: 0,
 		frequencyRank: 500,
+		firstSeen: { surah: 1, ayah: 1, wordIndex: 0 },
+		encounterLocations: [],
+		difficultyScore: 0.5,
 		...overrides
 	};
 }

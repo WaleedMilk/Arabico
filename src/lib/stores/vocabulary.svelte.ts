@@ -1,12 +1,6 @@
 import { browser } from '$app/environment';
 import { vocabularyDB, db } from '$lib/db';
-import {
-	getCurrentUserId,
-	fetchVocabularyFromSupabase,
-	syncVocabularyToSupabase,
-	updateWordFamiliarity,
-	type DbVocabularyEntry
-} from '$lib/db/supabase';
+import { getCurrentUserId, fetchVocabularyFromSupabase } from '$lib/db/supabase';
 import { syncManager } from '$lib/stores/sync.svelte';
 import type { VocabularyEntry, FamiliarityLevel, QuranLocation } from '$lib/types';
 
@@ -103,35 +97,6 @@ function createVocabularyStore() {
 		familiarityCache = new Map(familiarityCache).set(wordId, level);
 	}
 
-	// Sync a single word to Supabase
-	async function syncWordToSupabase(entry: VocabularyEntry) {
-		if (!userId || !navigator.onLine) return;
-
-		try {
-			const dbEntry: DbVocabularyEntry = {
-				user_id: userId,
-				word_id: entry.wordId,
-				surface_form: entry.surfaceForm,
-				lemma: entry.lemma,
-				root: entry.root,
-				gloss: entry.gloss,
-				frequency_rank: entry.frequencyRank,
-				first_seen: new Date().toISOString(),
-				familiarity: entry.familiarity,
-				last_reviewed: entry.lastReviewed
-					? typeof entry.lastReviewed === 'string'
-						? entry.lastReviewed
-						: entry.lastReviewed.toISOString()
-					: undefined,
-				review_count: entry.reviewCount
-			};
-
-			await syncVocabularyToSupabase(userId, [dbEntry]);
-		} catch (error) {
-			console.error('Failed to sync word to Supabase:', error);
-		}
-	}
-
 	return {
 		get cache() {
 			return familiarityCache;
@@ -150,37 +115,12 @@ function createVocabularyStore() {
 			await loadCache();
 		},
 
-		// Force sync with Supabase
+		// Force sync with Supabase (delegates to syncManager)
 		async syncWithCloud() {
 			if (!browser || !userId || isSyncing) return;
-
 			isSyncing = true;
 			try {
-				// Get all local entries
-				const localEntries = await db.vocabulary.toArray();
-
-				// Convert to Supabase format
-				const dbEntries: DbVocabularyEntry[] = localEntries.map((entry) => ({
-					user_id: userId!,
-					word_id: entry.wordId,
-					surface_form: entry.surfaceForm,
-					lemma: entry.lemma,
-					root: entry.root,
-					gloss: entry.gloss,
-					frequency_rank: entry.frequencyRank,
-					first_seen: new Date().toISOString(),
-					familiarity: entry.familiarity,
-					last_reviewed: entry.lastReviewed
-						? typeof entry.lastReviewed === 'string'
-							? entry.lastReviewed
-							: entry.lastReviewed.toISOString()
-						: undefined,
-					review_count: entry.reviewCount
-				}));
-
-				await syncVocabularyToSupabase(userId!, dbEntries);
-
-				// Reload from cloud to get merged data
+				await syncManager.forceSyncAll();
 				await loadFromSupabase();
 			} finally {
 				isSyncing = false;

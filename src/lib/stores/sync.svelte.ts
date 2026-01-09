@@ -20,7 +20,6 @@ import type { VocabularyEntry, UserEngagement, ReviewSession } from '$lib/types'
 
 // Sync configuration
 const DEBOUNCE_MS = 500;
-const BATCH_DELAY_MS = 100;
 
 // Pending sync queues
 let pendingVocabulary = new Set<string>();
@@ -52,7 +51,7 @@ function createSyncStore() {
 	}
 
 	// Convert local VocabularyEntry to Supabase format
-	function toDbVocabularyEntry(entry: VocabularyEntry, oderId: string): DbVocabularyEntry {
+	function toDbVocabularyEntry(entry: VocabularyEntry, odUserId: string): DbVocabularyEntry {
 		// Handle SerializableDate (can be Date or string)
 		let lastReviewed: string | undefined;
 		if (entry.lastReviewed) {
@@ -62,7 +61,7 @@ function createSyncStore() {
 		}
 
 		return {
-			user_id: oderId,
+			user_id: odUserId,
 			word_id: entry.wordId,
 			surface_form: entry.surfaceForm,
 			lemma: entry.lemma,
@@ -301,9 +300,7 @@ function createSyncStore() {
 				isSyncing = true;
 
 				for (const sessionId of sessionIds) {
-					// Get session from local DB (sessions are stored with string IDs)
-					const sessions = await reviewSessionDB.getRecent(50);
-					const session = sessions.find(s => s.id === sessionId);
+					const session = await reviewSessionDB.getById(sessionId);
 
 					if (session) {
 						const { error: upsertError } = await supabase

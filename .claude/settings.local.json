@@ -10,7 +10,8 @@
       "Bash(powershell -Command:*)",
       "Bash(dir:*)",
       "Bash(npm run check:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx svelte-check:*)"
     ]
   }
 }
