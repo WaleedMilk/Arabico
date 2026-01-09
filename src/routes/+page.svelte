@@ -3,16 +3,23 @@
 	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
 </script>
 
+<script lang="ts">
+	import { surahList, toArabicNumerals } from '$lib/data/surahs';
+	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
+</script>
+
 <svelte:head>
 	<title>Arabico - Surah Index</title>
 </svelte:head>
 
-<div class="space-y-8">
-	<!-- Hero Section with Three.js Background -->
-	<section class="hero-section relative py-16 text-center overflow-hidden">
-		<ThreeBackground class="hero-canvas" />
+<div class="fixed top-0 left-0 w-full h-full -z-10">
+	<ThreeBackground />
+</div>
 
-		<div class="hero-content relative z-10">
+<div class="space-y-8">
+	<!-- Hero Section -->
+	<section class="relative py-16 text-center">
+		<div class="relative z-10">
 			<h1 class="font-arabic text-5xl text-[var(--text-primary)] mb-3 drop-shadow-sm">القرآن الكريم</h1>
 			<p class="text-xl text-[var(--text-secondary)] italic mb-4">The Noble Quran</p>
 			<p class="text-[var(--text-muted)] max-w-lg mx-auto leading-relaxed">
@@ -92,7 +99,7 @@
 </div>
 
 <style>
-	.hero-section {
+	section.relative {
 		min-height: 280px;
 		display: flex;
 		align-items: center;
@@ -100,41 +107,20 @@
 		margin: -1rem -1rem 0 -1rem;
 		padding-left: 1rem;
 		padding-right: 1rem;
-		background: linear-gradient(
-			180deg,
-			transparent 0%,
-			rgba(250, 247, 242, 0.5) 100%
-		);
-	}
-
-	:global(.dark) .hero-section {
-		background: linear-gradient(
-			180deg,
-			transparent 0%,
-			rgba(26, 21, 18, 0.5) 100%
-		);
-	}
-
-	.hero-content {
-		padding: 2rem 1rem;
-	}
-
-	:global(.hero-canvas) {
-		opacity: 0.9;
 	}
 
 	@media (max-width: 640px) {
-		.hero-section {
+		section.relative {
 			min-height: 220px;
 			padding-top: 2rem;
 			padding-bottom: 2rem;
 		}
 
-		.hero-content h1 {
+		.relative h1 {
 			font-size: 2.5rem;
 		}
 
-		.hero-content p {
+		.relative p {
 			font-size: 1rem;
 		}
 	}
