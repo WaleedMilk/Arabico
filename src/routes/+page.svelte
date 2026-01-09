@@ -3,11 +3,6 @@
 	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
 </script>
 
-<script lang="ts">
-	import { surahList, toArabicNumerals } from '$lib/data/surahs';
-	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
-</script>
-
 <svelte:head>
 	<title>Arabico - Surah Index</title>
 </svelte:head>
