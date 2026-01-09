@@ -7,13 +7,13 @@
 	<title>Arabico - Surah Index</title>
 </svelte:head>
 
-<div class="fixed top-0 left-0 w-full h-full -z-10">
-	<ThreeBackground />
-</div>
+<div class="relative space-y-8">
+	<div class="absolute inset-0 -z-10">
+		<ThreeBackground />
+	</div>
 
-<div class="space-y-8">
 	<!-- Hero Section -->
-	<section class="relative py-16 text-center">
+	<section class="py-16 text-center">
 		<div class="relative z-10">
 			<h1 class="font-arabic text-5xl text-[var(--text-primary)] mb-3 drop-shadow-sm">القرآن الكريم</h1>
 			<p class="text-xl text-[var(--text-secondary)] italic mb-4">The Noble Quran</p>
@@ -94,7 +94,7 @@
 </div>
 
 <style>
-	section.relative {
+	section.py-16 {
 		min-height: 280px;
 		display: flex;
 		align-items: center;
@@ -105,17 +105,17 @@
 	}
 
 	@media (max-width: 640px) {
-		section.relative {
+		section.py-16 {
 			min-height: 220px;
 			padding-top: 2rem;
 			padding-bottom: 2rem;
 		}
 
-		.relative h1 {
+		.py-16 h1 {
 			font-size: 2.5rem;
 		}
 
-		.relative p {
+		.py-16 p {
 			font-size: 1rem;
 		}
 	}
