@@ -52,8 +52,8 @@
 		</span>
 	</div>
 
-	<!-- Translation (if available) -->
-	{#if ayah.translation}
+	<!-- Translation (only shown when meanings are revealed) -->
+	{#if ayah.translation && showAllMeanings}
 		<p class="ayah-translation">
 			{ayah.translation}
 		</p>

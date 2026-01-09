@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { inject } from '@vercel/analytics';
 	import { theme } from '$lib/stores/settings.svelte';
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -10,6 +11,9 @@
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 
 	let { children } = $props();
+
+	// Initialize Vercel Analytics
+	inject();
 
 	onMount(async () => {
 		// Initialize auth, vocabulary, and sync manager
