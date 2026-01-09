@@ -7,13 +7,22 @@
 	<title>Arabico - Surah Index</title>
 </svelte:head>
 
+<script lang="ts">
+	import { surahList, toArabicNumerals } from '$lib/data/surahs';
+	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
+</script>
+
+<svelte:head>
+	<title>Arabico - Surah Index</title>
+</svelte:head>
+
 <div class="relative space-y-8">
 	<div class="absolute inset-0 -z-10">
 		<ThreeBackground />
 	</div>
 
 	<!-- Hero Section -->
-	<section class="py-16 text-center">
+	<section class="relative overflow-hidden rounded-lg py-16 text-center">
 		<div class="relative z-10">
 			<h1 class="font-arabic text-5xl text-[var(--text-primary)] mb-3 drop-shadow-sm">القرآن الكريم</h1>
 			<p class="text-xl text-[var(--text-secondary)] italic mb-4">The Noble Quran</p>
