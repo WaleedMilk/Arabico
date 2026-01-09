@@ -1,0 +1,25 @@
+[33m515a689[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevelopments[m[33m, [m[1;31morigin/developments[m[33m)[m refactor: Remove redundant script section in +page.svelte for cleaner code
+[33m479a62b[m refactor: Consolidate script imports and enhance section structure in +page.svelte
+[33m28a7947[m refactor: Update layout structure in +page.svelte for improved styling and organization
+[33m0fae3a1[m refactor: Remove duplicate script imports in +page.svelte for cleaner code
+[33mdf7a1cf[m refactor: Simplify structure of +page.svelte by removing duplicate imports and reorganizing sections
+[33mb3b90f0[m feat: Enhance vocabulary handling with definite article functions and improve engagement store reactivity
+[33mf94ab64[m Refactor code structure for improved readability and maintainability
+[33mf1f9d2a[m feat: Enhance ThreeBackground component with position and size props, and improve particle system settings
+[33mfc251d0[m feat: Implement Three.js particle system and mouse interaction controllers
+[33mbd02d80[m feat: add script to generate new Svelte components with boilerplate
+[33mbac1f1f[m Add mobile optimization styles and components for improved responsiveness
+[33m61d3573[m Implement contextual review mode with adjustable direction ratio and card rendering
+[33mfc49ece[m Refactor code structure for improved readability and maintainability
+[33m6685d3d[m Add JSON files for Surahs 95 to 99 with translations and word breakdowns
+[33m6c3d5a5[m Supabase tables work now?
+[33m2a4fc0d[m Proper review system expansion
+[33mf67bc4b[m Further expansion, learning tool
+[33m346a71a[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Add Supabase integration for cloud sync and update familiarity colors
+[33m60f8740[m Remove node_modules from git tracking
+[33m1eb8f67[m Remove broken Vercel output, add gitignore
+[33mabf31b3[m vercel
+[33me28c893[m full setup?
+[33md7b13be[m More changes?
+[33m0d4294c[m Starting change
+[33m31ec6c3[m Initial commit
