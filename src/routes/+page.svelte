@@ -7,15 +7,6 @@
 	<title>Arabico - Surah Index</title>
 </svelte:head>
 
-<script lang="ts">
-	import { surahList, toArabicNumerals } from '$lib/data/surahs';
-	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
-</script>
-
-<svelte:head>
-	<title>Arabico - Surah Index</title>
-</svelte:head>
-
 <div class="relative space-y-8">
 	<div class="absolute inset-0 -z-10">
 		<ThreeBackground />
