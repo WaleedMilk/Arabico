@@ -7,11 +7,10 @@
 	<title>Arabico - Surah Index</title>
 </svelte:head>
 
-<div class="relative space-y-8">
-	<div class="absolute inset-0 -z-10">
-		<ThreeBackground />
-	</div>
+<!-- Full-page particle background (fixed position) -->
+<ThreeBackground position="center" size="full" intensity={0.5} class="home-particles" />
 
+<div class="relative space-y-8">
 	<!-- Hero Section -->
 	<section class="relative overflow-hidden rounded-lg py-16 text-center">
 		<div class="relative z-10">
@@ -94,6 +93,13 @@
 </div>
 
 <style>
+	/* Full-page fixed particles */
+	:global(.home-particles) {
+		position: fixed !important;
+		inset: 0;
+		z-index: -1;
+	}
+
 	section.py-16 {
 		min-height: 280px;
 		display: flex;
@@ -117,6 +123,11 @@
 
 		.py-16 p {
 			font-size: 1rem;
+		}
+
+		/* Hide particles on mobile to reduce distraction */
+		:global(.home-particles) {
+			display: none;
 		}
 	}
 </style>

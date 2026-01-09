@@ -5,15 +5,17 @@
 	import { theme } from '$lib/stores/settings.svelte';
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { syncManager } from '$lib/stores/sync.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import MobileNav from '$lib/components/navigation/MobileNav.svelte';
 
 	let { children } = $props();
 
 	onMount(async () => {
-		// Initialize auth and vocabulary
+		// Initialize auth, vocabulary, and sync manager
 		await auth.init();
 		await vocabulary.init();
+		await syncManager.init();
 	});
 </script>
 

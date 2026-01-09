@@ -7,6 +7,7 @@ import {
 	updateWordFamiliarity,
 	type DbVocabularyEntry
 } from '$lib/db/supabase';
+import { syncManager } from '$lib/stores/sync.svelte';
 import type { VocabularyEntry, FamiliarityLevel, QuranLocation } from '$lib/types';
 
 // In-memory cache of word familiarity for fast lookups during reading
@@ -224,8 +225,8 @@ function createVocabularyStore() {
 				await vocabularyDB.upsert(entry);
 				setCacheEntry(wordId, 'seen');
 
-				// Then sync to Supabase (async, don't block)
-				syncWordToSupabase(entry);
+				// Queue for cloud sync (debounced)
+				syncManager.queueVocabularySync(wordId);
 			}
 		},
 
@@ -236,10 +237,8 @@ function createVocabularyStore() {
 			await vocabularyDB.updateFamiliarity(wordId, level);
 			setCacheEntry(wordId, level);
 
-			// Sync to Supabase
-			if (userId && navigator.onLine) {
-				updateWordFamiliarity(userId, wordId, level).catch(console.error);
-			}
+			// Queue for cloud sync (debounced)
+			syncManager.queueVocabularySync(wordId);
 		},
 
 		async addToReview(wordId: string) {

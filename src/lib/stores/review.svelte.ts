@@ -11,6 +11,7 @@
 
 import { browser } from '$app/environment';
 import { vocabularyDB, reviewSessionDB } from '$lib/db';
+import { syncManager } from '$lib/stores/sync.svelte';
 import {
 	calculateNextReview,
 	calculateDifficultyScore,
@@ -269,6 +270,9 @@ function createReviewStore() {
 				difficultyScore: newDifficulty
 			});
 
+			// Queue vocabulary update for cloud sync
+			syncManager.queueVocabularySync(entry.wordId);
+
 			// Update session stats
 			sessionStats.reviewed++;
 			if (quality >= 3) {
@@ -298,13 +302,16 @@ function createReviewStore() {
 			const duration = endTime.getTime() - currentSession.startTime.getTime();
 
 			// Save session to database
-			await reviewSessionDB.create({
+			const sessionId = await reviewSessionDB.create({
 				...currentSession,
 				endTime,
 				wordsReviewed: sessionStats.reviewed,
 				wordsCorrect: sessionStats.correct,
 				duration
 			});
+
+			// Queue session for cloud sync
+			syncManager.queueSessionSync(sessionId);
 
 			// Mark due reviews as completed if this wasn't a practice session
 			if (!isPracticeMode) {

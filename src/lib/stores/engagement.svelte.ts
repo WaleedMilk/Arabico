@@ -10,6 +10,7 @@
 
 import { browser } from '$app/environment';
 import { engagementDB } from '$lib/db';
+import { syncManager } from '$lib/stores/sync.svelte';
 import type { UserEngagement } from '$lib/types';
 
 function createEngagementStore() {
@@ -103,6 +104,8 @@ function createEngagementStore() {
 					currentStreak: 0
 				};
 				await engagementDB.upsert(engagement);
+				// Queue for cloud sync
+				syncManager.queueEngagementSync();
 			}
 		},
 
@@ -155,6 +158,8 @@ function createEngagementStore() {
 
 			// Save to database
 			await engagementDB.upsert(engagement);
+			// Queue for cloud sync
+			syncManager.queueEngagementSync();
 		},
 
 		/**
@@ -169,6 +174,8 @@ function createEngagementStore() {
 				totalWordsReviewed: engagement.totalWordsReviewed + count
 			};
 			await engagementDB.upsert(engagement);
+			// Queue for cloud sync
+			syncManager.queueEngagementSync();
 		},
 
 		/**
