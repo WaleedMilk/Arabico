@@ -299,11 +299,12 @@ export interface VerbInfo {
 
 // Extended QuranWord with translation data
 export interface QuranWordWithTranslation extends QuranWord {
-	translation: string;
+	translation: string; // WBW translation (shown under words when reading)
 	transliteration: string;
 	audioStart?: string;
 	audioDuration?: string;
 	// Additional data from common vocabulary
-	isCommonWord?: boolean; // True if translation comes from 80% vocabulary
+	isCommonWord?: boolean; // True if word is found in 80% vocabulary
+	commonTranslation?: string; // Curated translation from common vocabulary (shown in side panel)
 	verbInfo?: VerbInfo; // Present if this is a verb with known conjugation
 }

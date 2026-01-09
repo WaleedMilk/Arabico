@@ -103,6 +103,23 @@ const YAA_ALEF_MAQSURA = /\u0649/g; // ى → ي
 // Taa marbuta
 const TAA_MARBUTA = /\u0629/g; // ة → ه
 
+// Definite article patterns (ال with various forms)
+const DEFINITE_ARTICLE = /^(ال|الْ|ٱلْ|ٱل)/;
+
+/**
+ * Strip the definite article (ال) from a word
+ */
+export function stripDefiniteArticle(text: string): string {
+	return text.replace(DEFINITE_ARTICLE, '');
+}
+
+/**
+ * Check if a word has the definite article
+ */
+export function hasDefiniteArticle(text: string): boolean {
+	return DEFINITE_ARTICLE.test(text);
+}
+
 /**
  * Normalize Arabic text for lookup purposes ONLY.
  * Display should always preserve original diacritics.
@@ -371,13 +388,28 @@ function buildIndex(data: RawVocabularyFile): VocabularyIndex {
 // ============================================
 
 /**
- * Look up a regular word (noun, particle) by Arabic text
+ * Look up a regular word (noun, particle) by Arabic text.
+ * Handles both definite (with ال) and indefinite forms.
  */
 export function lookupWord(arabic: string): CommonWord | null {
 	if (!vocabularyIndex) return null;
 
 	const normalized = normalizeForLookup(arabic);
-	return vocabularyIndex.byNormalizedArabic.get(normalized) || null;
+
+	// Try direct lookup first
+	const directMatch = vocabularyIndex.byNormalizedArabic.get(normalized);
+	if (directMatch) {
+		return directMatch;
+	}
+
+	// If the word has a definite article, try without it
+	if (hasDefiniteArticle(arabic)) {
+		const withoutArticle = stripDefiniteArticle(arabic);
+		const normalizedWithout = normalizeForLookup(withoutArticle);
+		return vocabularyIndex.byNormalizedArabic.get(normalizedWithout) || null;
+	}
+
+	return null;
 }
 
 /**

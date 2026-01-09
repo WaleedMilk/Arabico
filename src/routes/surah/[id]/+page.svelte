@@ -90,8 +90,8 @@
 </svelte:head>
 
 {#if surah}
-	<!-- Decorative particle background in corner -->
-	<ThreeBackground position="bottom-right" size="medium" intensity={0.8} class="reader-particles" />
+	<!-- Decorative particle background throughout -->
+	<ThreeBackground position="center" size="full" intensity={0.4} class="reader-particles" />
 
 	<!-- Main layout with panel -->
 	<div class="reader-layout" class:panel-open={isPanelOpen}>
@@ -104,6 +104,8 @@
 			surahId={surahId}
 			ayahNum={selectedWord ? parseWordLocation(selectedWord.id)?.ayah : undefined}
 			wordIndex={selectedWord ? parseWordLocation(selectedWord.id)?.word : undefined}
+			isCommonWord={selectedWordGloss?.isCommonWord}
+			verbInfo={selectedWordGloss?.verbInfo}
 			onClose={closePanel}
 		/>
 

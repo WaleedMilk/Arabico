@@ -98,7 +98,10 @@ function createEngagementStore() {
 
 			// If more than 1 day has passed, streak is broken
 			if (daysDiff > 1) {
-				engagement.currentStreak = 0;
+				engagement = {
+					...engagement,
+					currentStreak: 0
+				};
 				await engagementDB.upsert(engagement);
 			}
 		},
@@ -124,24 +127,31 @@ function createEngagementStore() {
 				? Math.floor((today.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24))
 				: -1;
 
+			let newStreak = engagement.currentStreak;
+			let newLongest = engagement.longestStreak;
+
 			if (daysDiff === 0) {
 				// Already reviewed today - no change to streak
-				return;
 			} else if (daysDiff === 1) {
 				// Consecutive day - increment streak
-				engagement.currentStreak++;
+				newStreak++;
 			} else {
 				// Streak broken or first review - start new streak
-				engagement.currentStreak = 1;
+				newStreak = 1;
 			}
 
 			// Update longest streak if needed
-			if (engagement.currentStreak > engagement.longestStreak) {
-				engagement.longestStreak = engagement.currentStreak;
+			if (newStreak > newLongest) {
+				newLongest = newStreak;
 			}
 
-			// Update last review date
-			engagement.lastReviewDate = today;
+			// Reassign the entire object to trigger Svelte reactivity
+			engagement = {
+				...engagement,
+				currentStreak: newStreak,
+				longestStreak: newLongest,
+				lastReviewDate: today.toISOString()
+			};
 
 			// Save to database
 			await engagementDB.upsert(engagement);
@@ -153,7 +163,11 @@ function createEngagementStore() {
 		async addWordsReviewed(count: number) {
 			if (!browser || !engagement) return;
 
-			engagement.totalWordsReviewed += count;
+			// Reassign the entire object to trigger Svelte reactivity
+			engagement = {
+				...engagement,
+				totalWordsReviewed: engagement.totalWordsReviewed + count
+			};
 			await engagementDB.upsert(engagement);
 		},
 

@@ -88,8 +88,8 @@
 	<title>Review - Arabico</title>
 </svelte:head>
 
-<!-- Decorative particle background in corner -->
-<ThreeBackground position="bottom-left" size="medium" intensity={0.8} class="review-particles" />
+<!-- Decorative particle background throughout -->
+<ThreeBackground position="center" size="full" intensity={0.4} class="review-particles" />
 
 <div class="review-hub max-w-lg mx-auto space-y-8">
 	<!-- Header with streak -->

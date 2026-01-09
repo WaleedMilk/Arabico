@@ -122,35 +122,36 @@ function transformSurahData(
 			const wordId = `${surahId}:${ayahNum}:${index + 1}`;
 			const arabicText = word.c;
 
-			// Priority 1: Check common vocabulary
+			// WBW translation (always used for inline display under words)
+			const wbwTranslation = translations?.[wordId] ?? word.e;
+
+			// Check common vocabulary for curated translation (used in side panel)
 			const commonResult = getCommonTranslation(arabicText);
 
-			let translation: string;
 			let isCommonWord = false;
+			let commonTranslation: string | undefined;
 			let verbInfo: VerbInfo | undefined;
 
 			if (commonResult) {
 				// Found in common vocabulary
-				translation = commonResult.translation;
 				isCommonWord = true;
+				commonTranslation = commonResult.translation;
 
 				// If it's a verb, store conjugation info
 				if (commonResult.isVerb && commonResult.verbMatch) {
 					verbInfo = buildVerbInfo(commonResult.verbMatch);
 				}
-			} else {
-				// Priority 2 & 3: WBW translations or QuranWBW fallback
-				translation = translations?.[wordId] ?? word.e;
 			}
 
 			return {
 				id: wordId,
 				text: arabicText,
 				transliteration: word.d,
-				translation,
+				translation: wbwTranslation, // WBW for inline display
 				audioStart: word.b,
 				audioDuration: word.h,
 				isCommonWord,
+				commonTranslation, // Curated translation for side panel
 				verbInfo
 			};
 		});
@@ -279,8 +280,16 @@ export async function getWordGlossAsync(wordId: string): Promise<{ gloss: string
 
 /**
  * Get word gloss from cache (sync)
+ * Returns common vocabulary translation if available (for side panel),
+ * otherwise falls back to WBW translation
  */
-export function getWordGlossCached(wordId: string): { gloss: string; lemma: string; transliteration: string } | null {
+export function getWordGlossCached(wordId: string): {
+	gloss: string;
+	lemma: string;
+	transliteration: string;
+	isCommonWord?: boolean;
+	verbInfo?: VerbInfo;
+} | null {
 	const parts = wordId.split(':');
 	if (parts.length !== 3) return null;
 
@@ -297,10 +306,15 @@ export function getWordGlossCached(wordId: string): { gloss: string; lemma: stri
 	const word = ayah.words[wordIndex - 1] as QuranWordWithTranslation | undefined;
 	if (!word) return null;
 
+	// Prefer common vocabulary translation for the side panel
+	const gloss = word.commonTranslation || word.translation || '';
+
 	return {
-		gloss: word.translation || '',
+		gloss,
 		lemma: word.text,
-		transliteration: word.transliteration || ''
+		transliteration: word.transliteration || '',
+		isCommonWord: word.isCommonWord,
+		verbInfo: word.verbInfo
 	};
 }
 
