@@ -11,5 +11,4 @@ export {
 	type QualityLevel
 } from './scene-manager';
 export { ThreadMeshParticleSystem, type ParticleConfig } from './particle-system';
-export { ScrollController, createScrollState, type ScrollConfig } from './scroll-controller';
 export { MouseController } from './mouse-controller';
