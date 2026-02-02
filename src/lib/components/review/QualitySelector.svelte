@@ -1,48 +1,140 @@
 <script lang="ts">
-	import type { ReviewQuality } from '$lib/types';
-
 	interface Props {
-		onSelect: (quality: ReviewQuality) => void;
+		onSelect: (rating: 1 | 2 | 3 | 4) => void;
+		intervals?: { again: string; hard: string; good: string; easy: string };
+		disabled?: boolean;
 	}
 
-	let { onSelect }: Props = $props();
+	let { onSelect, intervals, disabled = false }: Props = $props();
 
-	const qualities: { value: ReviewQuality; label: string; description: string; color: string }[] = [
-		{ value: 1, label: '1', description: 'Complete blackout', color: 'bg-red-500' },
-		{ value: 2, label: '2', description: 'Wrong, but recognized', color: 'bg-orange-500' },
-		{ value: 3, label: '3', description: 'Correct with difficulty', color: 'bg-yellow-500' },
-		{ value: 4, label: '4', description: 'Correct with hesitation', color: 'bg-lime-500' },
-		{ value: 5, label: '5', description: 'Perfect recall', color: 'bg-green-500' }
+	const ratings = [
+		{ value: 1 as const, label: 'Again', sublabel: 'Forgot', color: 'rating-again' },
+		{ value: 2 as const, label: 'Hard', sublabel: 'Struggled', color: 'rating-hard' },
+		{ value: 3 as const, label: 'Good', sublabel: 'Recalled', color: 'rating-good' },
+		{ value: 4 as const, label: 'Easy', sublabel: 'Effortless', color: 'rating-easy' },
 	];
 
-	let hoveredQuality = $state<ReviewQuality | null>(null);
+	function handleKeydown(event: KeyboardEvent) {
+		const key = parseInt(event.key);
+		if (key >= 1 && key <= 4 && !disabled) {
+			onSelect(key as 1 | 2 | 3 | 4);
+		}
+	}
 </script>
 
-<div class="quality-selector space-y-3">
-	<p class="text-center text-sm text-[var(--text-muted)]">How well did you remember?</p>
+<svelte:window onkeydown={handleKeydown} />
 
-	<div class="flex justify-center gap-2">
-		{#each qualities as q}
-			<button
-				onclick={() => onSelect(q.value)}
-				onmouseenter={() => (hoveredQuality = q.value)}
-				onmouseleave={() => (hoveredQuality = null)}
-				class="relative w-12 h-12 rounded-lg {q.color} text-white font-bold text-lg
-                       transition-all hover:scale-110 hover:shadow-lg focus:outline-none
-                       focus:ring-2 focus:ring-offset-2 focus:ring-gold"
-				aria-label="{q.label} - {q.description}"
-			>
-				{q.label}
-			</button>
-		{/each}
-	</div>
-
-	<!-- Description on hover -->
-	<div class="h-6 text-center text-sm text-[var(--text-secondary)]">
-		{#if hoveredQuality !== null}
-			{qualities.find((q) => q.value === hoveredQuality)?.description}
-		{:else}
-			<span class="text-[var(--text-muted)]">Tap a number to rate</span>
-		{/if}
-	</div>
+<div class="rating-selector">
+	{#each ratings as r}
+		<button
+			onclick={() => onSelect(r.value)}
+			class="rating-btn {r.color}"
+			{disabled}
+		>
+			<span class="rating-label">{r.label}</span>
+			{#if intervals}
+				<span class="rating-interval">{intervals[r.label.toLowerCase() as keyof typeof intervals]}</span>
+			{/if}
+			<span class="rating-sublabel">{r.sublabel}</span>
+		</button>
+	{/each}
+	<p class="rating-hint">Press 1-4 to rate</p>
 </div>
+
+<style>
+	.rating-selector {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		justify-content: center;
+		padding: 0.5rem 0;
+	}
+
+	.rating-btn {
+		flex: 1;
+		min-width: 70px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.75rem 0.5rem;
+		border-radius: 12px;
+		border: 1px solid var(--border-color);
+		background: var(--bg-secondary);
+		transition: all 0.2s ease;
+		cursor: pointer;
+	}
+
+	.rating-btn:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.rating-btn:active:not(:disabled) {
+		transform: scale(0.97);
+	}
+
+	.rating-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.rating-label {
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+
+	.rating-interval {
+		font-size: 0.7rem;
+		color: var(--text-muted);
+	}
+
+	.rating-sublabel {
+		font-size: 0.65rem;
+		color: var(--text-muted);
+	}
+
+	.rating-hint {
+		width: 100%;
+		text-align: center;
+		font-size: 0.65rem;
+		color: var(--text-muted);
+		margin-top: 0.25rem;
+	}
+
+	.rating-again {
+		border-color: rgba(220, 38, 38, 0.3);
+	}
+	.rating-again:hover:not(:disabled) {
+		background: rgba(220, 38, 38, 0.1);
+		border-color: rgba(220, 38, 38, 0.5);
+	}
+
+	.rating-hard {
+		border-color: rgba(234, 88, 12, 0.3);
+	}
+	.rating-hard:hover:not(:disabled) {
+		background: rgba(234, 88, 12, 0.1);
+		border-color: rgba(234, 88, 12, 0.5);
+	}
+
+	.rating-good {
+		border-color: rgba(22, 163, 74, 0.3);
+	}
+	.rating-good:hover:not(:disabled) {
+		background: rgba(22, 163, 74, 0.1);
+		border-color: rgba(22, 163, 74, 0.5);
+	}
+
+	.rating-easy {
+		border-color: rgba(37, 99, 235, 0.3);
+	}
+	.rating-easy:hover:not(:disabled) {
+		background: rgba(37, 99, 235, 0.1);
+		border-color: rgba(37, 99, 235, 0.5);
+	}
+
+	:global(.dark) .rating-btn {
+		background: var(--bg-elevated);
+	}
+</style>

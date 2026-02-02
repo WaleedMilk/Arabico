@@ -37,6 +37,15 @@ function createVocabularyStore() {
 					familiarity: entry.familiarity,
 					lastReviewed: entry.last_reviewed ? new Date(entry.last_reviewed) : undefined,
 					reviewCount: entry.review_count,
+					// FSRS defaults
+					stability: 0,
+					difficulty: 0,
+					fsrsState: 0,
+					reps: 0,
+					lapses: 0,
+					scheduledDays: 0,
+					elapsedDays: 0,
+					// Legacy defaults
 					easeFactor: 2.5,
 					interval: 0,
 					consecutiveCorrect: 0,
@@ -153,7 +162,15 @@ function createVocabularyStore() {
 					firstSeen: location,
 					familiarity: 'seen',
 					reviewCount: 0,
-					// SRS defaults
+					// FSRS defaults
+					stability: 0,
+					difficulty: 0,
+					fsrsState: 0,
+					reps: 0,
+					lapses: 0,
+					scheduledDays: 0,
+					elapsedDays: 0,
+					// Legacy SRS defaults
 					easeFactor: 2.5,
 					interval: 0,
 					consecutiveCorrect: 0,

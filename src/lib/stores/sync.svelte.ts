@@ -60,6 +60,13 @@ function createSyncStore() {
 				: entry.lastReviewed;
 		}
 
+		let nextReviewDate: string | undefined;
+		if (entry.nextReviewDate) {
+			nextReviewDate = entry.nextReviewDate instanceof Date
+				? entry.nextReviewDate.toISOString()
+				: entry.nextReviewDate;
+		}
+
 		return {
 			user_id: odUserId,
 			word_id: entry.wordId,
@@ -71,7 +78,17 @@ function createSyncStore() {
 			first_seen: new Date().toISOString(),
 			familiarity: entry.familiarity,
 			last_reviewed: lastReviewed,
-			review_count: entry.reviewCount || 0
+			review_count: entry.reviewCount || 0,
+			next_review_date: nextReviewDate,
+			// FSRS fields
+			stability: entry.stability ?? 0,
+			fsrs_difficulty: entry.difficulty ?? 0,
+			fsrs_state: entry.fsrsState ?? 0,
+			reps: entry.reps ?? 0,
+			lapses: entry.lapses ?? 0,
+			scheduled_days: entry.scheduledDays ?? 0,
+			elapsed_days: entry.elapsedDays ?? 0,
+			difficulty_score: entry.difficultyScore ?? 0.5,
 		};
 	}
 

@@ -40,6 +40,9 @@ export const DEFAULT_LEARNING_CONFIG: LearningConfig = {
 /**
  * Calculate the next review date and SRS parameters based on response quality
  *
+ * @deprecated Use `reviewWord` from `fsrs-arabico.ts` instead. This SM-2 implementation
+ * is kept for backward compatibility during migration but will be removed in a future release.
+ *
  * @param entry - The vocabulary entry being reviewed
  * @param quality - User's self-reported recall quality (0-5)
  * @param rootFamilyBonus - Bonus from knowing related root-family words (0-0.5)
@@ -207,10 +210,11 @@ export function shouldPromoteToKnown(entry: VocabularyEntry): boolean {
 }
 
 /**
- * Get recommended daily review count based on queue size
+ * Get recommended daily review count based on queue size.
+ * Uses FSRS state counts: learning includes both Learning (1) and Relearning (3).
  *
  * @param dueCount - Number of words currently due
- * @param learningCount - Number of words in "learning" state
+ * @param learningCount - Number of words in Learning/Relearning state
  * @returns Recommended number of words to review
  */
 export function getRecommendedReviewCount(dueCount: number, learningCount: number): number {
@@ -232,42 +236,28 @@ export function getRecommendedReviewCount(dueCount: number, learningCount: numbe
 /**
  * Determine the review stage of a vocabulary entry
  *
- * Stage definitions:
- * - new: Never reviewed (reviewCount === 0)
- * - learning: In learning steps (interval < 1 day)
- * - young: Graduated, interval < 21 days
- * - mature: Interval >= 21 days AND consecutiveCorrect >= 5
+ * Stage definitions (FSRS-based):
+ * - new: FSRSState.New (0) — never reviewed
+ * - learning: FSRSState.Learning (1) or FSRSState.Relearning (3)
+ * - young: FSRSState.Review (2) with stability < 21 days
+ * - mature: FSRSState.Review (2) with stability >= 21 days
  * - suspended: familiarity === 'ignored'
  *
  * @param entry - The vocabulary entry
  * @returns The current review stage
  */
 export function getReviewStage(entry: VocabularyEntry): ReviewStage {
-	// Suspended takes priority
-	if (entry.familiarity === 'ignored') {
-		return 'suspended';
+	if (entry.familiarity === 'ignored') return 'suspended';
+
+	const state = entry.fsrsState ?? 0;
+	switch (state) {
+		case 0: return 'new';
+		case 1: return 'learning';
+		case 3: return 'learning'; // Relearning → display as learning
+		case 2:
+			return (entry.stability ?? 0) >= 21 ? 'mature' : 'young';
+		default: return 'new';
 	}
-
-	// Never reviewed
-	if ((entry.reviewCount ?? 0) === 0) {
-		return 'new';
-	}
-
-	const interval = entry.interval ?? 0;
-	const consecutiveCorrect = entry.consecutiveCorrect ?? 0;
-
-	// In learning steps (less than 1 day interval)
-	if (interval < 1) {
-		return 'learning';
-	}
-
-	// Mature: well-established memory
-	if (interval >= 21 && consecutiveCorrect >= 5) {
-		return 'mature';
-	}
-
-	// Young: graduated but not yet mature
-	return 'young';
 }
 
 /**
@@ -403,8 +393,13 @@ export function getDueEntries(entries: VocabularyEntry[]): VocabularyEntry[] {
 		// Skip suspended
 		if (entry.familiarity === 'ignored') return false;
 
-		// New words are always available
-		if ((entry.reviewCount ?? 0) === 0) return true;
+		// New cards (fsrsState === 0) are always available
+		if ((entry.fsrsState ?? 0) === 0) return true;
+
+		// Learning/Relearning cards (fsrsState 1 or 3) with scheduledDays 0 are due now
+		if ((entry.fsrsState === 1 || entry.fsrsState === 3) && (entry.scheduledDays ?? 0) === 0) {
+			return true;
+		}
 
 		// Check if past due date
 		if (entry.nextReviewDate) {
@@ -431,8 +426,8 @@ export function getPracticeEntries(entries: VocabularyEntry[]): VocabularyEntry[
 		// Skip suspended
 		if (entry.familiarity === 'ignored') return false;
 
-		// Skip new words (they should be introduced through due reviews)
-		if ((entry.reviewCount ?? 0) === 0) return false;
+		// Skip new cards (fsrsState === 0) — they should be introduced through due reviews
+		if ((entry.fsrsState ?? 0) === 0) return false;
 
 		// Skip words reviewed in the last hour
 		if (entry.lastReviewed) {

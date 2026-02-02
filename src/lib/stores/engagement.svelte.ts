@@ -21,10 +21,10 @@ function createEngagementStore() {
 	// Get user ID from localStorage
 	function getUserId(): string {
 		if (!browser) return '';
-		let userId = localStorage.getItem('arabico_anon_id');
+		let userId = localStorage.getItem('arabico-anon-id');
 		if (!userId) {
 			userId = crypto.randomUUID();
-			localStorage.setItem('arabico_anon_id', userId);
+			localStorage.setItem('arabico-anon-id', userId);
 		}
 		return userId;
 	}

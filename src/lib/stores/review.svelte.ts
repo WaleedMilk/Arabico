@@ -12,11 +12,9 @@
 import { browser } from '$app/environment';
 import { vocabularyDB, reviewSessionDB } from '$lib/db';
 import { syncManager } from '$lib/stores/sync.svelte';
+import { reviewWord, shouldPromoteToKnown, calculateDifficultyScore, getFSRS } from '$lib/review/fsrs-arabico';
+import { FSRSRating, FSRSState, type FSRSCard } from '$lib/review/fsrs';
 import {
-	calculateNextReview,
-	calculateDifficultyScore,
-	shouldPromoteToKnown,
-	calculateRootFamilyBonus,
 	generateReviewForecast,
 	getStageCounts,
 	getReviewStage
@@ -25,7 +23,6 @@ import { buildReviewQueue, buildReviewCardData, getDueWordCount } from '$lib/rev
 import type {
 	VocabularyEntry,
 	ReviewMode,
-	ReviewQuality,
 	ReviewSession,
 	ReviewCardData,
 	ReviewForecast,
@@ -160,9 +157,9 @@ function createReviewStore() {
 				cardData = await Promise.all(queue.map(buildReviewCardData));
 
 				// Create session record
-				const userId = localStorage.getItem('arabico_anon_id') || crypto.randomUUID();
-				if (!localStorage.getItem('arabico_anon_id')) {
-					localStorage.setItem('arabico_anon_id', userId);
+				const userId = localStorage.getItem('arabico-anon-id') || crypto.randomUUID();
+				if (!localStorage.getItem('arabico-anon-id')) {
+					localStorage.setItem('arabico-anon-id', userId);
 				}
 
 				currentSession = {
@@ -203,9 +200,9 @@ function createReviewStore() {
 				cardData = await Promise.all(queue.map(buildReviewCardData));
 
 				// Create session record
-				const userId = localStorage.getItem('arabico_anon_id') || crypto.randomUUID();
-				if (!localStorage.getItem('arabico_anon_id')) {
-					localStorage.setItem('arabico_anon_id', userId);
+				const userId = localStorage.getItem('arabico-anon-id') || crypto.randomUUID();
+				if (!localStorage.getItem('arabico-anon-id')) {
+					localStorage.setItem('arabico-anon-id', userId);
 				}
 
 				currentSession = {
@@ -224,60 +221,63 @@ function createReviewStore() {
 		/**
 		 * Record a review response and calculate next review
 		 */
-		async recordResponse(quality: ReviewQuality, responseTime: number) {
+		async recordResponse(rating: 1 | 2 | 3 | 4, responseTime: number) {
 			if (!browser || !currentSession || currentIndex >= queue.length) return;
 
 			const entry = queue[currentIndex];
 
-			// Calculate root family bonus (if we have root data)
-			let rootFamilyBonus = 0;
-			if (entry.root) {
-				const relatedWords = await vocabularyDB.getByRoot(entry.root);
-				const knownCount = relatedWords.filter((w) => w.familiarity === 'known').length;
-				rootFamilyBonus = calculateRootFamilyBonus(knownCount, relatedWords.length);
-			}
+			// Build FSRSCard from entry's stored fields
+			const card: FSRSCard = {
+				stability: entry.stability ?? 0,
+				difficulty: entry.difficulty ?? 0,
+				state: (entry.fsrsState ?? 0) as FSRSState,
+				reps: entry.reps ?? 0,
+				lapses: entry.lapses ?? 0,
+				lastReview: entry.lastReviewed ? (
+					entry.lastReviewed instanceof Date
+						? entry.lastReviewed.toISOString()
+						: entry.lastReviewed
+				) : undefined,
+				scheduledDays: entry.scheduledDays ?? 0,
+				elapsedDays: entry.elapsedDays ?? 0,
+			};
 
-			// Calculate new SRS values
-			const srsResult = calculateNextReview(entry, quality, rootFamilyBonus);
+			// Review with FSRS + Quranic adjustments
+			const result = await reviewWord(card, rating as FSRSRating, entry);
 
-			// Determine new familiarity
+			// Determine familiarity
 			let newFamiliarity = entry.familiarity;
 			if (entry.familiarity === 'seen') {
 				newFamiliarity = 'learning';
 			}
-
-			// Check if should promote to "known"
-			const updatedEntry = {
-				...entry,
-				easeFactor: srsResult.newEaseFactor,
-				interval: srsResult.newInterval,
-				consecutiveCorrect: srsResult.newConsecutiveCorrect
-			};
-			if (shouldPromoteToKnown(updatedEntry)) {
+			if (shouldPromoteToKnown(result.card)) {
 				newFamiliarity = 'known';
 			}
 
-			// Calculate new difficulty score
-			const newDifficulty = calculateDifficultyScore(updatedEntry);
+			const newDifficulty = calculateDifficultyScore(result.card);
 
-			// Update database
-			await vocabularyDB.updateSRS(entry.wordId, {
-				easeFactor: srsResult.newEaseFactor,
-				interval: srsResult.newInterval,
-				nextReviewDate: srsResult.nextReviewDate,
-				consecutiveCorrect: srsResult.newConsecutiveCorrect,
+			// Update database with FSRS fields
+			await vocabularyDB.updateFSRS(entry.wordId, {
+				stability: result.card.stability,
+				difficulty: result.card.difficulty,
+				fsrsState: result.card.state,
+				reps: result.card.reps,
+				lapses: result.card.lapses,
+				scheduledDays: result.card.scheduledDays,
+				elapsedDays: result.card.elapsedDays,
+				nextReviewDate: result.nextReviewDate,
 				familiarity: newFamiliarity,
-				difficultyScore: newDifficulty
+				difficultyScore: newDifficulty,
 			});
 
-			// Queue vocabulary update for cloud sync
+			// Queue for cloud sync
 			syncManager.queueVocabularySync(entry.wordId);
 
-			// Update session stats
-			sessionStats.reviewed++;
-			if (quality >= 3) {
-				sessionStats.correct++;
-			}
+			// Fix: reassign sessionStats for proper Svelte 5 reactivity
+			sessionStats = {
+				reviewed: sessionStats.reviewed + 1,
+				correct: sessionStats.correct + (rating >= 3 ? 1 : 0),
+			};
 
 			// Move to next card
 			currentIndex++;

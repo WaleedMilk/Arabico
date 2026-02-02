@@ -22,6 +22,16 @@ export interface DbVocabularyEntry {
 	review_count: number;
 	created_at?: string;
 	updated_at?: string;
+	// FSRS fields
+	next_review_date?: string;
+	stability?: number;
+	fsrs_difficulty?: number;
+	fsrs_state?: number;
+	reps?: number;
+	lapses?: number;
+	scheduled_days?: number;
+	elapsed_days?: number;
+	difficulty_score?: number;
 }
 
 export interface DbReadingProgress {
@@ -56,10 +66,10 @@ export async function getCurrentUserId(): Promise<string | null> {
 
 	// Check for anonymous ID in localStorage
 	if (typeof window !== 'undefined') {
-		let anonId = localStorage.getItem('arabico_anon_id');
+		let anonId = localStorage.getItem('arabico-anon-id');
 		if (!anonId) {
 			anonId = crypto.randomUUID();
-			localStorage.setItem('arabico_anon_id', anonId);
+			localStorage.setItem('arabico-anon-id', anonId);
 		}
 		return anonId;
 	}

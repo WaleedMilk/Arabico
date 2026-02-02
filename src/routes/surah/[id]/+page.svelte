@@ -10,7 +10,9 @@
 	import AyahDisplay from '$lib/components/reader/AyahDisplay.svelte';
 	import WordDetailPanel from '$lib/components/reader/WordDetailPanel.svelte';
 	import ThreeBackground from '$lib/components/three/ThreeBackground.svelte';
+	import { loadSurahMorphology, getMorphologyForWord } from '$lib/data/morphology';
 	import type { QuranWord, Ayah } from '$lib/types';
+	import type { WordMorphologyData } from '$lib/types/morphology';
 
 	// Get surah ID from URL (handle invalid IDs)
 	function parseSurahId(id: string | undefined): number {
@@ -29,16 +31,24 @@
 	// Show all meanings toggle
 	let showAllMeanings = $state(false);
 
-	// Load ayahs when surah changes
+	// Morphology state
+	let morphologyLoaded = $state(false);
+
+	// Load ayahs and morphology when surah changes
 	$effect(() => {
 		if (surahId > 0) {
 			isLoading = true;
 			ayahs = null;
+			morphologyLoaded = false;
 			getSurahAyahsAsync(surahId).then((data) => {
 				ayahs = data;
 				isLoading = false;
 				// Preload adjacent surahs for smooth navigation
 				preloadAdjacentSurahs(surahId);
+			});
+			// Load morphology data in parallel (non-blocking)
+			loadSurahMorphology(surahId).then(() => {
+				morphologyLoaded = true;
 			});
 		}
 	});
@@ -47,6 +57,14 @@
 	let selectedWord = $state<QuranWord | null>(null);
 	let selectedWordGloss = $derived(selectedWord ? getWordGlossCached(selectedWord.id) : null);
 	let isPanelOpen = $derived(!!selectedWord);
+
+	// Get morphology data for selected word
+	let selectedWordMorphology = $derived.by((): WordMorphologyData | null => {
+		if (!selectedWord || !morphologyLoaded) return null;
+		const loc = parseWordLocation(selectedWord.id);
+		if (!loc) return null;
+		return getMorphologyForWord(loc.surah, loc.ayah, loc.word);
+	});
 
 	// Parse word location from ID
 	function parseWordLocation(wordId: string): { surah: number; ayah: number; word: number } | null {
@@ -106,6 +124,7 @@
 			wordIndex={selectedWord ? parseWordLocation(selectedWord.id)?.word : undefined}
 			isCommonWord={selectedWordGloss?.isCommonWord}
 			verbInfo={selectedWordGloss?.verbInfo}
+			morphology={selectedWordMorphology}
 			onClose={closePanel}
 		/>
 

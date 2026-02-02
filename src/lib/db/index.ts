@@ -4,8 +4,7 @@ import type {
 	UserProgress,
 	UserSettings,
 	ReviewSession,
-	UserEngagement,
-	DEFAULT_SRS_VALUES
+	UserEngagement
 } from '$lib/types';
 
 // Database class extending Dexie
@@ -51,6 +50,49 @@ class ArabicoDB extends Dexie {
 						}
 					});
 			});
+
+		// Version 3: Add FSRS fields (replacing SM-2)
+		this.version(3)
+			.stores({
+				vocabulary:
+					'++id, wordId, lemma, familiarity, frequencyRank, lastReviewed, nextReviewDate, root, fsrsState',
+				progress: '++id, surahId, timestamp',
+				settings: 'key',
+				reviewSessions: '++id, userId, mode, startTime',
+				userEngagement: 'userId'
+			})
+			.upgrade((tx) => {
+				return tx.table('vocabulary').toCollection().modify((entry: any) => {
+					const ef = entry.easeFactor ?? 2.5;
+					const interval = entry.interval ?? 0;
+					const cc = entry.consecutiveCorrect ?? 0;
+					const reviewCount = entry.reviewCount ?? 0;
+
+					// Convert SM-2 interval to FSRS stability
+					entry.stability = Math.max(0.4, interval);
+
+					// Map easeFactor (1.3-2.5) to FSRS difficulty (1-10)
+					entry.difficulty = Math.max(1, Math.min(10,
+						1 + (2.5 - ef) / (2.5 - 1.3) * 9
+					));
+
+					// Map familiarity to FSRS state
+					if (entry.familiarity === 'new' || reviewCount === 0) {
+						entry.fsrsState = 0; // New
+					} else if (interval < 1) {
+						entry.fsrsState = 1; // Learning
+					} else if (cc === 0 && reviewCount > 0) {
+						entry.fsrsState = 3; // Relearning
+					} else {
+						entry.fsrsState = 2; // Review
+					}
+
+					entry.reps = cc;
+					entry.lapses = Math.max(0, reviewCount - cc);
+					entry.scheduledDays = interval;
+					entry.elapsedDays = 0;
+				});
+			});
 	}
 }
 
@@ -79,6 +121,15 @@ export const vocabularyDB = {
 		// Add default SRS values for new entries (spread entry last so it can override defaults)
 		const entryWithDefaults: Omit<VocabularyEntry, 'id'> = {
 			...entry,
+			// FSRS defaults
+			stability: entry.stability ?? 0,
+			difficulty: entry.difficulty ?? 0,
+			fsrsState: entry.fsrsState ?? 0,
+			reps: entry.reps ?? 0,
+			lapses: entry.lapses ?? 0,
+			scheduledDays: entry.scheduledDays ?? 0,
+			elapsedDays: entry.elapsedDays ?? 0,
+			// Legacy defaults
 			easeFactor: entry.easeFactor ?? 2.5,
 			interval: entry.interval ?? 0,
 			consecutiveCorrect: entry.consecutiveCorrect ?? 0,
@@ -136,6 +187,38 @@ export const vocabularyDB = {
 		}
 	},
 
+	// Update FSRS fields after review (atomic modify)
+	async updateFSRS(
+		wordId: string,
+		updates: {
+			stability: number;
+			difficulty: number;
+			fsrsState: number;
+			reps: number;
+			lapses: number;
+			scheduledDays: number;
+			elapsedDays: number;
+			nextReviewDate: Date;
+			familiarity?: VocabularyEntry['familiarity'];
+			difficultyScore?: number;
+		}
+	): Promise<void> {
+		await db.vocabulary.where('wordId').equals(wordId).modify((entry) => {
+			entry.stability = updates.stability;
+			entry.difficulty = updates.difficulty;
+			entry.fsrsState = updates.fsrsState;
+			entry.reps = updates.reps;
+			entry.lapses = updates.lapses;
+			entry.scheduledDays = updates.scheduledDays;
+			entry.elapsedDays = updates.elapsedDays;
+			entry.nextReviewDate = updates.nextReviewDate.toISOString();
+			entry.lastReviewed = new Date().toISOString();
+			entry.reviewCount = (entry.reviewCount || 0) + 1;
+			if (updates.familiarity) entry.familiarity = updates.familiarity;
+			if (updates.difficultyScore !== undefined) entry.difficultyScore = updates.difficultyScore;
+		});
+	},
+
 	// Add a new encounter location
 	async addEncounterLocation(wordId: string, location: VocabularyEntry['firstSeen']): Promise<void> {
 		const entry = await this.getByWordId(wordId);
@@ -185,15 +268,6 @@ export const vocabularyDB = {
 			.toArray();
 
 		return allLearning.filter((w) => !w.nextReviewDate || new Date(w.nextReviewDate) <= now).length;
-	},
-
-	// Legacy: get words for review (uses old sorting)
-	async getWordsForReview(limit = 20): Promise<VocabularyEntry[]> {
-		return db.vocabulary
-			.where('familiarity')
-			.anyOf(['seen', 'learning'])
-			.sortBy('lastReviewed')
-			.then((words) => words.slice(0, limit));
 	},
 
 	async getStats(): Promise<Record<VocabularyEntry['familiarity'], number>> {

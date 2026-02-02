@@ -128,7 +128,8 @@ export const config = {
 		directionRatio: 'arabico-direction-ratio',
 		fontSize: 'arabico-font-size',
 		userId: 'arabico-user-id',
-		syncTimestamp: 'arabico-sync-timestamp'
+		syncTimestamp: 'arabico-sync-timestamp',
+		anonId: 'arabico-anon-id'
 	},
 
 	// ===========================================

@@ -38,6 +38,14 @@ function createMockEntry(overrides: Partial<VocabularyEntry> = {}): VocabularyEn
 		firstSeen: { surah: 1, ayah: 1, wordIndex: 0 },
 		encounterLocations: [],
 		difficultyScore: 0.5,
+		// FSRS fields
+		stability: 0,
+		difficulty: 0,
+		fsrsState: 0,
+		reps: 0,
+		lapses: 0,
+		scheduledDays: 0,
+		elapsedDays: 0,
 		...overrides
 	};
 }

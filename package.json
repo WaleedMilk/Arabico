@@ -12,7 +12,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "new:component": "node scripts/new-component.js",
-    "validate": "npm run check && npm run test:run"
+    "validate": "npm run check && npm run test:run",
+    "build:morphology": "npx tsx scripts/parse-morphology.ts"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^7.0.0",
@@ -28,6 +29,7 @@
     "svelte": "^5.33.5",
     "svelte-check": "^4.2.1",
     "tailwindcss": "^4.1.7",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^4.0.16"

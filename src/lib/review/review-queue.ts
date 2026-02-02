@@ -13,6 +13,7 @@ import type { VocabularyEntry, ReviewMode, ReviewCardData, WordOccurrence } from
 import { getSurahById } from '$lib/data/surahs';
 import { getSurahAyahsAsync } from '$lib/data/quran-data';
 import { calculateDifficultyScore } from './srs-algorithm';
+import { FSRS } from '$lib/review/fsrs';
 
 export interface ReviewQueueOptions {
 	mode: ReviewMode;
@@ -81,54 +82,47 @@ export async function buildReviewQueue(options: ReviewQueueOptions): Promise<Voc
 }
 
 /**
- * Sort words by priority based on review mode
+ * Sort words by priority based on review mode.
+ * Uses FSRS retrievability: lower retrievability = more urgent review.
  */
 function sortByPriority(
 	words: VocabularyEntry[],
 	mode: ReviewMode,
 	practiceMode: boolean = false
 ): VocabularyEntry[] {
+	const fsrs = new FSRS();
 	const now = Date.now();
 
 	return words.sort((a, b) => {
 		if (practiceMode) {
-			// In practice mode, prioritize by:
-			// 1. Difficulty (harder words first)
-			// 2. Time since last review (longest first)
-			const aDifficulty = a.difficultyScore ?? calculateDifficultyScore(a);
-			const bDifficulty = b.difficultyScore ?? calculateDifficultyScore(b);
+			// In practice mode, sort by retrievability (lowest first = most forgotten)
+			const aElapsed = a.lastReviewed
+				? (now - new Date(a.lastReviewed as string).getTime()) / (1000 * 60 * 60 * 24)
+				: 999;
+			const bElapsed = b.lastReviewed
+				? (now - new Date(b.lastReviewed as string).getTime()) / (1000 * 60 * 60 * 24)
+				: 999;
 
-			const aLastReview = a.lastReviewed ? new Date(a.lastReviewed).getTime() : 0;
-			const bLastReview = b.lastReviewed ? new Date(b.lastReviewed).getTime() : 0;
+			const aR = fsrs.retrievability(aElapsed, a.stability ?? 0.4);
+			const bR = fsrs.retrievability(bElapsed, b.stability ?? 0.4);
 
-			// Calculate time since last review (longer = higher priority)
-			const aTimeSince = now - aLastReview;
-			const bTimeSince = now - bLastReview;
-
-			// Combine difficulty and time since last review
-			const aPriority = aDifficulty * 0.5 + (aTimeSince / (1000 * 60 * 60 * 24)) * 0.5;
-			const bPriority = bDifficulty * 0.5 + (bTimeSince / (1000 * 60 * 60 * 24)) * 0.5;
-
-			return bPriority - aPriority;
+			// Lower retrievability = more urgent
+			return aR - bR;
 		}
 
-		// Normal mode: prioritize by overdue time and difficulty
-		// Calculate overdue time (higher = more overdue)
-		const aOverdue = a.nextReviewDate ? now - new Date(a.nextReviewDate).getTime() : now;
-		const bOverdue = b.nextReviewDate ? now - new Date(b.nextReviewDate).getTime() : now;
+		// Normal mode: sort by FSRS retrievability (lowest first)
+		const aElapsed = a.lastReviewed
+			? (now - new Date(a.lastReviewed as string).getTime()) / (1000 * 60 * 60 * 24)
+			: 999;
+		const bElapsed = b.lastReviewed
+			? (now - new Date(b.lastReviewed as string).getTime()) / (1000 * 60 * 60 * 24)
+			: 999;
 
-		// Calculate difficulty score
-		const aDifficulty = a.difficultyScore ?? calculateDifficultyScore(a);
-		const bDifficulty = b.difficultyScore ?? calculateDifficultyScore(b);
+		const aR = fsrs.retrievability(aElapsed, a.stability ?? 0.4);
+		const bR = fsrs.retrievability(bElapsed, b.stability ?? 0.4);
 
-		// Priority formula: overdue time + (difficulty * weight)
-		// Difficulty weight varies by mode
-		const difficultyWeight = mode === 'quick' ? 500000 : 1000000;
-
-		const aPriority = aOverdue + aDifficulty * difficultyWeight;
-		const bPriority = bOverdue + bDifficulty * difficultyWeight;
-
-		return bPriority - aPriority; // Descending (highest priority first)
+		// Lower retrievability = more urgent
+		return aR - bR;
 	});
 }
 

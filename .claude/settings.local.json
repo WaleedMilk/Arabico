@@ -12,7 +12,9 @@
       "Bash(npm run check:*)",
       "Bash(npx tsc:*)",
       "Bash(npx svelte-check:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

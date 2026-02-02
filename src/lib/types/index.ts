@@ -84,24 +84,44 @@ export interface VocabularyEntry {
 	lastReviewed?: SerializableDate;
 	reviewCount: number;
 
-	// SRS Algorithm Fields (SM-2 inspired)
-	easeFactor: number; // Default 2.5, range 1.3-2.5
-	interval: number; // Days until next review
+	// FSRS Fields (replacing SM-2)
+	stability: number; // Memory stability in days
+	difficulty: number; // Item difficulty [1, 10]
+	fsrsState: number; // FSRSState enum value (0-3)
+	reps: number; // Total successful reviews
+	lapses: number; // Times card was forgotten
+	scheduledDays: number; // Days until next review
+	elapsedDays: number; // Days since last review
+
+	// SRS Algorithm Fields (SM-2 legacy, optional for migration)
+	easeFactor?: number; // Default 2.5, range 1.3-2.5
+	interval?: number; // Days until next review
 	nextReviewDate?: SerializableDate; // Calculated review date (stored as ISO string)
-	consecutiveCorrect: number; // Streak of correct answers
+	consecutiveCorrect?: number; // Streak of correct answers
 
 	// Learning Context
 	encounterLocations: QuranLocation[]; // All places word was seen
 	difficultyScore: number; // Calculated difficulty (0-1)
 }
 
+// FSRS Rating type (matches FSRSRating enum values)
+export type FSRSRatingType = 1 | 2 | 3 | 4;
+
 // Default values for new vocabulary entries
 export const DEFAULT_SRS_VALUES = {
+	stability: 0,
+	difficulty: 0,
+	fsrsState: 0,
+	reps: 0,
+	lapses: 0,
+	scheduledDays: 0,
+	elapsedDays: 0,
+	difficultyScore: 0.5,
+	encounterLocations: [] as QuranLocation[],
+	// Legacy (optional)
 	easeFactor: 2.5,
 	interval: 0,
 	consecutiveCorrect: 0,
-	difficultyScore: 0.5,
-	encounterLocations: [] as QuranLocation[]
 };
 
 // User reading progress
@@ -140,23 +160,6 @@ export interface Surah {
 // Complete Quran data structure
 export interface QuranData {
 	surahs: Surah[];
-}
-
-// Word morphology data from Quranic Arabic Corpus
-export interface WordMorphology {
-	wordId: string;
-	lemma: string;
-	root?: string;
-	pos: string; // Part of speech
-	features: string[];
-	gloss: string;
-}
-
-// Audio segment for word-level timing
-export interface AudioSegment {
-	wordId: string;
-	startTime: number;
-	endTime: number;
 }
 
 // Theme mode
@@ -307,4 +310,41 @@ export interface QuranWordWithTranslation extends QuranWord {
 	isCommonWord?: boolean; // True if word is found in 80% vocabulary
 	commonTranslation?: string; // Curated translation from common vocabulary (shown in side panel)
 	verbInfo?: VerbInfo; // Present if this is a verb with known conjugation
+}
+
+// ============================================
+// Testing Types
+// ============================================
+
+export interface TestConfig {
+	id: string;
+	creatorId: string;
+	title?: string;
+	surahStart: number;
+	ayahStart: number;
+	surahEnd: number;
+	ayahEnd: number;
+	specificAyahs?: { surah: number; ayah: number }[];
+	wordIds: string[];
+	wordCount: number;
+	createdAt: string;
+}
+
+export interface TestWord {
+	wordId: string;
+	arabic: string;
+	translation: string;
+	transliteration?: string;
+	surahName: string;
+	ayahRef: string;
+}
+
+export interface TestResult {
+	totalWords: number;
+	ratings: Map<string, FSRSRatingType>;
+	overallScore: number;
+	problemWords: TestWord[];
+	startTime: Date;
+	endTime: Date;
+	duration: number;
 }

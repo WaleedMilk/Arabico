@@ -58,6 +58,18 @@
 				>
 					Vocabulary
 				</a>
+				<a
+					href="/progress"
+					class="desktop-nav-link text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+				>
+					Progress
+				</a>
+				<a
+					href="/test"
+					class="desktop-nav-link text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+				>
+					Test
+				</a>
 				<ThemeToggle />
 			</div>
 		</nav>

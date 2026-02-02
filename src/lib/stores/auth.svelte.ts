@@ -81,7 +81,7 @@ function createAuthStore() {
 
 			// Clear local anonymous ID if signing out
 			if (browser) {
-				localStorage.removeItem('arabico_anon_id');
+				localStorage.removeItem('arabico-anon-id');
 			}
 		},
 

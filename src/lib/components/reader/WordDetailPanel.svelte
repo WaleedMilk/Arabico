@@ -1,6 +1,18 @@
 <script lang="ts">
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
 	import type { QuranWord, QuranWordWithTranslation, VerbInfo } from '$lib/types';
+	import type { WordMorphologyData } from '$lib/types/morphology';
+	import {
+		POS_LABELS,
+		CASE_LABELS,
+		GENDER_LABELS,
+		NUMBER_LABELS,
+		TENSE_LABELS,
+		MOOD_LABELS,
+		VERB_FORM_LABELS,
+		PREFIX_LABELS,
+		SUFFIX_LABELS
+	} from '$lib/data/morphology-labels';
 	import VerbConjugation from './VerbConjugation.svelte';
 
 	interface Props {
@@ -13,10 +25,11 @@
 		wordIndex?: number;
 		isCommonWord?: boolean;
 		verbInfo?: VerbInfo;
+		morphology?: WordMorphologyData | null;
 		onClose: () => void;
 	}
 
-	let { word, gloss = '', lemma = '', transliteration = '', surahId, ayahNum, wordIndex, isCommonWord = false, verbInfo, onClose }: Props = $props();
+	let { word, gloss = '', lemma = '', transliteration = '', surahId, ayahNum, wordIndex, isCommonWord = false, verbInfo, morphology = null, onClose }: Props = $props();
 
 	let familiarity = $derived(word ? vocabulary.getFamiliarity(word.id) : 'new');
 	let isPlaying = $state(false);
@@ -111,6 +124,11 @@
 >
 	{#if word}
 		<div class="panel-content">
+			<!-- Mobile drag handle -->
+			<div class="drag-handle" aria-hidden="true">
+				<div class="drag-handle-pill"></div>
+			</div>
+
 			<!-- Close button -->
 			<button
 				onclick={onClose}
@@ -145,13 +163,107 @@
 				{/if}
 			</div>
 
+			<!-- Morphology Grammar Section -->
+			{#if morphology}
+				<div class="morphology-section liquid-glass">
+					<span class="section-label">Grammar</span>
+					<div class="morphology-rows">
+						<!-- Part of Speech -->
+						{#if morphology.pos}
+							<div class="morph-row">
+								<span class="morph-label">Part of Speech</span>
+								<span class="morph-value">{POS_LABELS[morphology.pos] || morphology.pos}</span>
+							</div>
+						{/if}
+
+						<!-- Root -->
+						{#if morphology.root}
+							<div class="morph-row">
+								<span class="morph-label">Root</span>
+								<span class="morph-value morph-root">{morphology.root}</span>
+							</div>
+						{/if}
+
+						<!-- Case -->
+						{#if morphology.case}
+							<div class="morph-row">
+								<span class="morph-label">Case</span>
+								<span class="morph-value">{CASE_LABELS[morphology.case] || morphology.case}</span>
+							</div>
+						{/if}
+
+						<!-- Gender / Number -->
+						{#if morphology.gender || morphology.number}
+							<div class="morph-row">
+								<span class="morph-label">Gender / Number</span>
+								<span class="morph-value">
+									{#if morphology.gender}{GENDER_LABELS[morphology.gender] || morphology.gender}{/if}
+									{#if morphology.gender && morphology.number} {/if}
+									{#if morphology.number}{NUMBER_LABELS[morphology.number] || morphology.number}{/if}
+								</span>
+							</div>
+						{/if}
+
+						<!-- Person (for verbs/pronouns) -->
+						{#if morphology.person}
+							<div class="morph-row">
+								<span class="morph-label">Person</span>
+								<span class="morph-value">
+									{morphology.person === '1' ? '1st' : morphology.person === '2' ? '2nd' : '3rd'} Person
+								</span>
+							</div>
+						{/if}
+
+						<!-- Tense -->
+						{#if morphology.tense}
+							<div class="morph-row">
+								<span class="morph-label">Tense</span>
+								<span class="morph-value">{TENSE_LABELS[morphology.tense] || morphology.tense}</span>
+							</div>
+						{/if}
+
+						<!-- Verb Form -->
+						{#if morphology.verbForm}
+							<div class="morph-row">
+								<span class="morph-label">Verb Form</span>
+								<span class="morph-value">{VERB_FORM_LABELS[morphology.verbForm] || morphology.verbForm}</span>
+							</div>
+						{/if}
+
+						<!-- Prefixes -->
+						{#if morphology.prefixes.length > 0}
+							<div class="morph-row">
+								<span class="morph-label">Prefixes</span>
+								<div class="morph-pills">
+									{#each morphology.prefixes as prefix}
+										<span class="morph-pill prefix-pill">{PREFIX_LABELS[prefix] || prefix}</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<!-- Suffixes -->
+						{#if morphology.suffixes.length > 0}
+							<div class="morph-row">
+								<span class="morph-label">Suffixes</span>
+								<div class="morph-pills">
+									{#each morphology.suffixes as suffix}
+										<span class="morph-pill suffix-pill">{SUFFIX_LABELS[suffix] || suffix}</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
+
 			<!-- Verb Conjugation Info -->
 			{#if verbInfo && word}
 				<VerbConjugation {verbInfo} conjugatedForm={word.text} />
 			{/if}
 
 			<!-- Grammatical Info -->
-			{#if lemma && lemma !== word.text && !verbInfo}
+			{#if lemma && lemma !== word.text && !verbInfo && !morphology}
 				<div class="grammar-section">
 					<div class="grammar-item">
 						<span class="grammar-label">Root Form</span>
@@ -594,8 +706,109 @@
 		border: 1px solid rgba(var(--color-gold-rgb, 196, 169, 98), 0.3);
 	}
 
+	/* Morphology Grammar Section */
+	.morphology-section {
+		padding: 1rem;
+		position: relative;
+	}
+
+	.morphology-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.morph-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.4rem 0;
+		border-bottom: 1px solid rgba(var(--border-color-rgb, 200, 200, 200), 0.15);
+	}
+
+	.morph-row:last-child {
+		border-bottom: none;
+	}
+
+	.morph-label {
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		flex-shrink: 0;
+	}
+
+	.morph-value {
+		font-size: 0.875rem;
+		color: var(--text-primary);
+		text-align: right;
+	}
+
+	.morph-root {
+		font-family: monospace;
+		letter-spacing: 0.1em;
+		font-weight: 500;
+	}
+
+	.morph-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+		justify-content: flex-end;
+	}
+
+	.morph-pill {
+		font-size: 0.625rem;
+		padding: 0.2rem 0.5rem;
+		border-radius: 9999px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.prefix-pill {
+		background: rgba(100, 149, 237, 0.15);
+		color: rgba(100, 149, 237, 1);
+		border: 1px solid rgba(100, 149, 237, 0.25);
+	}
+
+	:global(.dark) .prefix-pill {
+		background: rgba(100, 149, 237, 0.2);
+		color: rgba(140, 180, 255, 1);
+		border-color: rgba(100, 149, 237, 0.3);
+	}
+
+	.suffix-pill {
+		background: rgba(var(--color-gold-rgb, 196, 169, 98), 0.15);
+		color: var(--color-gold, #C4A962);
+		border: 1px solid rgba(var(--color-gold-rgb, 196, 169, 98), 0.25);
+	}
+
+	:global(.dark) .suffix-pill {
+		background: rgba(var(--color-gold-rgb, 196, 169, 98), 0.2);
+		border-color: rgba(var(--color-gold-rgb, 196, 169, 98), 0.3);
+	}
+
+	/* Drag handle - hidden on desktop, shown on mobile */
+	.drag-handle {
+		display: none;
+	}
+
+	.drag-handle-pill {
+		width: 40px;
+		height: 4px;
+		border-radius: 2px;
+		background: var(--text-muted);
+		opacity: 0.35;
+	}
+
 	/* Mobile responsive */
 	@media (max-width: 768px) {
+		.drag-handle {
+			display: flex;
+			justify-content: center;
+			padding: 0.5rem 0 0;
+		}
+
 		.word-detail-panel {
 			width: 100%;
 			height: auto;
