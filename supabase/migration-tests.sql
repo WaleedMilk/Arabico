@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS test_configs (
   specific_ayahs JSONB,
   word_ids TEXT[] NOT NULL,
   word_count INTEGER NOT NULL,
+  test_mode TEXT DEFAULT 'flashcard',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

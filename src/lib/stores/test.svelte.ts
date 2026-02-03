@@ -4,9 +4,10 @@ import {
   extractWordsFromRange,
   extractWordsFromSpecificAyahs,
   calculateTestResult,
-  shuffleArray
+  shuffleArray,
+  generateMCQOptions
 } from '$lib/data/test-utils';
-import type { TestConfig, TestWord, TestResult, FSRSRatingType } from '$lib/types';
+import type { TestConfig, TestWord, TestResult, FSRSRatingType, TestMode, MCQOption } from '$lib/types';
 
 function createTestStore() {
   let testConfig = $state<TestConfig | null>(null);
@@ -19,6 +20,22 @@ function createTestStore() {
   let result = $state<TestResult | null>(null);
   let startTime = $state<Date | null>(null);
   let error = $state<string | null>(null);
+
+  // MCQ state
+  let mcqOptions = $state<MCQOption[]>([]);
+  let mcqSelected = $state<string | null>(null);
+  let mcqAnswered = $state(false);
+
+  function generateOptionsForCurrent() {
+    const word = testWords[currentIndex];
+    if (word) {
+      mcqOptions = generateMCQOptions(word, testWords);
+    } else {
+      mcqOptions = [];
+    }
+    mcqSelected = null;
+    mcqAnswered = false;
+  }
 
   return {
     get testConfig() { return testConfig; },
@@ -35,12 +52,17 @@ function createTestStore() {
       return testWords.length > 0 ? Math.round((currentIndex / testWords.length) * 100) : 0;
     },
     get totalWords() { return testWords.length; },
+    get testMode(): TestMode { return testConfig?.testMode ?? 'flashcard'; },
+    get mcqOptions() { return mcqOptions; },
+    get mcqSelected() { return mcqSelected; },
+    get mcqAnswered() { return mcqAnswered; },
 
     /**
      * Teacher: Create a test and save to Supabase
      */
     async createTest(config: {
       title?: string;
+      testMode?: TestMode;
       surahStart: number;
       ayahStart: number;
       surahEnd: number;
@@ -78,6 +100,7 @@ function createTestStore() {
           .insert({
             creator_id: userId,
             title: config.title || null,
+            test_mode: config.testMode || 'flashcard',
             surah_start: config.surahStart,
             ayah_start: config.ayahStart,
             surah_end: config.surahEnd,
@@ -113,6 +136,9 @@ function createTestStore() {
       currentIndex = 0;
       ratings = new Map();
       isRevealed = false;
+      mcqOptions = [];
+      mcqSelected = null;
+      mcqAnswered = false;
 
       try {
         // Fetch test config from Supabase
@@ -129,6 +155,7 @@ function createTestStore() {
           id: data.id,
           creatorId: data.creator_id,
           title: data.title,
+          testMode: data.test_mode || 'flashcard',
           surahStart: data.surah_start,
           ayahStart: data.ayah_start,
           surahEnd: data.surah_end,
@@ -153,6 +180,11 @@ function createTestStore() {
         // Shuffle for test randomness
         testWords = shuffleArray(words);
         startTime = new Date();
+
+        // Generate MCQ options for first word if in MCQ mode
+        if (testConfig.testMode === 'mcq') {
+          generateOptionsForCurrent();
+        }
       } catch (err) {
         console.error('Error loading test:', err);
         error = err instanceof Error ? err.message : 'Failed to load test';
@@ -162,14 +194,14 @@ function createTestStore() {
     },
 
     /**
-     * Reveal the translation for the current word
+     * Reveal the translation for the current word (flashcard mode)
      */
     reveal() {
       isRevealed = true;
     },
 
     /**
-     * Record rating for current word and advance
+     * Record rating for current word and advance (flashcard mode)
      */
     recordRating(rating: FSRSRatingType) {
       if (currentIndex >= testWords.length) return;
@@ -183,6 +215,36 @@ function createTestStore() {
       if (currentIndex >= testWords.length) {
         this.completeTest();
       }
+    },
+
+    /**
+     * Select an MCQ answer. Shows feedback, then auto-advances after delay.
+     */
+    selectMCQAnswer(optionText: string) {
+      if (mcqAnswered || currentIndex >= testWords.length) return;
+
+      mcqSelected = optionText;
+      mcqAnswered = true;
+
+      const isCorrect = mcqOptions.find(o => o.text === optionText)?.isCorrect ?? false;
+      const rating: FSRSRatingType = isCorrect ? 4 : 1;
+
+      const newRatings = new Map(ratings);
+      newRatings.set(testWords[currentIndex].wordId, rating);
+      ratings = newRatings;
+
+      // Auto-advance after brief delay for feedback
+      setTimeout(() => {
+        currentIndex++;
+        mcqSelected = null;
+        mcqAnswered = false;
+
+        if (currentIndex >= testWords.length) {
+          this.completeTest();
+        } else {
+          generateOptionsForCurrent();
+        }
+      }, isCorrect ? 600 : 1200);
     },
 
     /**
@@ -208,6 +270,9 @@ function createTestStore() {
       result = null;
       startTime = null;
       error = null;
+      mcqOptions = [];
+      mcqSelected = null;
+      mcqAnswered = false;
     },
   };
 }

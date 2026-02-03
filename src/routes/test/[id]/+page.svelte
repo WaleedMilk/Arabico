@@ -33,7 +33,18 @@
 		{ value: 4 as const, label: 'Easy', sublabel: 'Effortless', colorClass: 'btn-easy' },
 	];
 
+	function handleMCQSelect(optionText: string) {
+		testStore.selectMCQAnswer(optionText);
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
+		if (testStore.testMode === 'mcq') {
+			const key = parseInt(event.key);
+			if (key >= 1 && key <= 4 && !testStore.mcqAnswered && testStore.mcqOptions.length >= key) {
+				handleMCQSelect(testStore.mcqOptions[key - 1].text);
+			}
+			return;
+		}
 		const key = parseInt(event.key);
 		if (key >= 1 && key <= 4 && testStore.isRevealed) {
 			handleRating(key as 1 | 2 | 3 | 4);
@@ -74,6 +85,7 @@
 		<TestResultReport
 			result={testStore.result}
 			title={testStore.testConfig?.title}
+			testMode={testStore.testMode}
 			onRetake={handleRetake}
 		/>
 
@@ -85,60 +97,91 @@
 				<span class="progress-text">
 					{testStore.currentIndex + 1} / {testStore.totalWords}
 				</span>
-				{#if testStore.testConfig?.title}
-					<span class="test-title-badge">{testStore.testConfig.title}</span>
-				{/if}
+				<div class="progress-badges">
+					{#if testStore.testMode === 'mcq'}
+						<span class="mode-badge">Multiple Choice</span>
+					{/if}
+					{#if testStore.testConfig?.title}
+						<span class="test-title-badge">{testStore.testConfig.title}</span>
+					{/if}
+				</div>
 			</div>
 			<div class="progress-track">
 				<div class="progress-fill" style="width: {testStore.progress}%"></div>
 			</div>
 		</div>
 
-		<!-- Flashcard -->
-		<div class="flashcard-area">
-			<div class="flashcard" class:revealed={testStore.isRevealed}>
-				<!-- Arabic word -->
-				<p class="card-arabic">{testStore.currentWord.arabic}</p>
+		{#if testStore.testMode === 'mcq'}
+			<!-- MCQ Mode -->
+			<div class="mcq-area">
+				<div class="mcq-card">
+					<p class="card-arabic">{testStore.currentWord.arabic}</p>
+					<p class="card-ref">{testStore.currentWord.ayahRef}</p>
+					<p class="mcq-prompt">Choose the correct translation:</p>
+				</div>
 
-				<!-- Reference -->
-				<p class="card-ref">{testStore.currentWord.ayahRef}</p>
+				<div class="mcq-options">
+					{#each testStore.mcqOptions as option, i}
+						{@const isSelected = testStore.mcqSelected === option.text}
+						{@const showCorrect = testStore.mcqAnswered && option.isCorrect}
+						{@const showWrong = testStore.mcqAnswered && isSelected && !option.isCorrect}
+						<button
+							onclick={() => handleMCQSelect(option.text)}
+							disabled={testStore.mcqAnswered}
+							class="mcq-btn"
+							class:mcq-correct={showCorrect}
+							class:mcq-wrong={showWrong}
+							class:mcq-dimmed={testStore.mcqAnswered && !showCorrect && !showWrong}
+						>
+							<span class="mcq-key">{i + 1}</span>
+							<span class="mcq-text">{option.text}</span>
+						</button>
+					{/each}
+				</div>
+				<p class="key-hint">Press 1-4 to select</p>
+			</div>
+		{:else}
+			<!-- Flashcard Mode -->
+			<div class="flashcard-area">
+				<div class="flashcard" class:revealed={testStore.isRevealed}>
+					<p class="card-arabic">{testStore.currentWord.arabic}</p>
+					<p class="card-ref">{testStore.currentWord.ayahRef}</p>
 
-				<!-- Reveal area -->
+					{#if testStore.isRevealed}
+						<div class="card-answer">
+							<p class="card-translation">
+								{testStore.currentWord.translation || 'No translation available'}
+							</p>
+							{#if testStore.currentWord.transliteration}
+								<p class="card-transliteration">{testStore.currentWord.transliteration}</p>
+							{/if}
+						</div>
+					{:else}
+						<button onclick={() => testStore.reveal()} class="reveal-btn">
+							Tap to reveal
+						</button>
+					{/if}
+				</div>
+
 				{#if testStore.isRevealed}
-					<div class="card-answer">
-						<p class="card-translation">
-							{testStore.currentWord.translation || 'No translation available'}
-						</p>
-						{#if testStore.currentWord.transliteration}
-							<p class="card-transliteration">{testStore.currentWord.transliteration}</p>
-						{/if}
+					<div class="rating-area">
+						<p class="rating-prompt">How well did you know this?</p>
+						<div class="rating-buttons">
+							{#each ratingButtons as r}
+								<button
+									onclick={() => handleRating(r.value)}
+									class="rating-btn {r.colorClass}"
+								>
+									<span class="r-label">{r.label}</span>
+									<span class="r-sub">{r.sublabel}</span>
+								</button>
+							{/each}
+						</div>
+						<p class="key-hint">Space to reveal &middot; 1-4 to rate</p>
 					</div>
-				{:else}
-					<button onclick={() => testStore.reveal()} class="reveal-btn">
-						Tap to reveal
-					</button>
 				{/if}
 			</div>
-
-			<!-- Rating buttons (only when revealed) -->
-			{#if testStore.isRevealed}
-				<div class="rating-area">
-					<p class="rating-prompt">How well did you know this?</p>
-					<div class="rating-buttons">
-						{#each ratingButtons as r}
-							<button
-								onclick={() => handleRating(r.value)}
-								class="rating-btn {r.colorClass}"
-							>
-								<span class="r-label">{r.label}</span>
-								<span class="r-sub">{r.sublabel}</span>
-							</button>
-						{/each}
-					</div>
-					<p class="key-hint">Space to reveal &middot; 1-4 to rate</p>
-				</div>
-			{/if}
-		</div>
+		{/if}
 
 	<!-- No words -->
 	{:else}
@@ -217,6 +260,21 @@
 		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--text-secondary);
+	}
+
+	.progress-badges {
+		display: flex;
+		gap: 0.375rem;
+		align-items: center;
+	}
+
+	.mode-badge {
+		font-size: 0.65rem;
+		color: white;
+		background: var(--accent-color);
+		padding: 0.125rem 0.5rem;
+		border-radius: 9999px;
+		font-weight: 500;
 	}
 
 	.test-title-badge {
@@ -400,4 +458,107 @@
 		color: var(--text-muted);
 		margin-top: 0.5rem;
 	}
+
+	/* MCQ Mode */
+	.mcq-area {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.mcq-card {
+		width: 100%;
+		padding: 2rem 1.5rem 1.25rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: 16px;
+		text-align: center;
+	}
+
+	.mcq-prompt {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		margin-top: 0.75rem;
+	}
+
+	.mcq-options {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+
+	.mcq-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		background: var(--bg-secondary);
+		border: 1.5px solid var(--border-color);
+		border-radius: 10px;
+		cursor: pointer;
+		transition: all 0.2s;
+		text-align: left;
+	}
+
+	.mcq-btn:hover:not(:disabled) {
+		border-color: var(--accent-color);
+		background: var(--bg-primary);
+	}
+
+	.mcq-btn:disabled {
+		cursor: default;
+	}
+
+	.mcq-btn.mcq-correct {
+		border-color: #16a34a;
+		background: rgba(22, 163, 74, 0.1);
+	}
+
+	.mcq-btn.mcq-wrong {
+		border-color: #dc2626;
+		background: rgba(220, 38, 38, 0.1);
+	}
+
+	.mcq-btn.mcq-dimmed {
+		opacity: 0.4;
+	}
+
+	.mcq-key {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 6px;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-color);
+		font-size: 0.7rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		flex-shrink: 0;
+	}
+
+	.mcq-correct .mcq-key {
+		background: #16a34a;
+		border-color: #16a34a;
+		color: white;
+	}
+
+	.mcq-wrong .mcq-key {
+		background: #dc2626;
+		border-color: #dc2626;
+		color: white;
+	}
+
+	.mcq-text {
+		font-size: 0.9rem;
+		color: var(--text-primary);
+		font-weight: 500;
+	}
+
+	.mcq-correct .mcq-text { color: #16a34a; }
+	.mcq-wrong .mcq-text { color: #dc2626; }
 </style>

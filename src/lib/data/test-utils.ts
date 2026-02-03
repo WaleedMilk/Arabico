@@ -1,6 +1,6 @@
 import { getSurahAyahsAsync } from './quran-data';
 import { getSurahById } from './surahs';
-import type { TestWord, TestResult, FSRSRatingType } from '$lib/types';
+import type { TestWord, TestResult, FSRSRatingType, MCQOption } from '$lib/types';
 
 /**
  * Extract unique test words from an ayah range.
@@ -135,7 +135,7 @@ export function calculateTestResult(
 }
 
 /**
- * Shuffle array in place (Fisher-Yates)
+ * Shuffle array (Fisher-Yates)
  */
 export function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -144,4 +144,56 @@ export function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+// Common Quranic word meanings used as fallback distractors
+const FALLBACK_TRANSLATIONS = [
+  'Lord', 'mercy', 'believe', 'people', 'earth', 'heaven', 'day', 'truth',
+  'knowledge', 'path', 'light', 'heart', 'soul', 'prayer', 'reward',
+  'worship', 'forgive', 'righteous', 'guardian', 'sustainer',
+];
+
+/**
+ * Generate 4 MCQ options for a word (1 correct + 3 distractors).
+ * Distractors are picked from other test words' translations.
+ */
+export function generateMCQOptions(
+  correctWord: TestWord,
+  allWords: TestWord[]
+): MCQOption[] {
+  const correctText = correctWord.translation || '—';
+
+  // Collect unique distractor translations from other words
+  const otherTranslations = allWords
+    .filter(w => w.wordId !== correctWord.wordId && w.translation && w.translation !== correctText)
+    .map(w => w.translation);
+
+  // Deduplicate
+  const unique = [...new Set(otherTranslations)];
+  const distractors: string[] = [];
+
+  // Pick up to 3 random distractors from other test words
+  const shuffledUnique = shuffleArray(unique);
+  for (const t of shuffledUnique) {
+    if (distractors.length >= 3) break;
+    distractors.push(t);
+  }
+
+  // Pad with fallback translations if needed
+  if (distractors.length < 3) {
+    const fallbacks = shuffleArray(
+      FALLBACK_TRANSLATIONS.filter(f => f !== correctText && !distractors.includes(f))
+    );
+    for (const f of fallbacks) {
+      if (distractors.length >= 3) break;
+      distractors.push(f);
+    }
+  }
+
+  const options: MCQOption[] = [
+    { text: correctText, isCorrect: true },
+    ...distractors.map(text => ({ text, isCorrect: false })),
+  ];
+
+  return shuffleArray(options);
 }

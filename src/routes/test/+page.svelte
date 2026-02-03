@@ -4,8 +4,10 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { testStore } from '$lib/stores/test.svelte';
 	import { surahList } from '$lib/data/surahs';
+	import type { TestMode } from '$lib/types';
 
 	let title = $state('');
+	let testMode = $state<TestMode>('flashcard');
 	let surahStart = $state(1);
 	let ayahStart = $state(1);
 	let surahEnd = $state(1);
@@ -56,6 +58,7 @@
 	async function handleCreate() {
 		const testId = await testStore.createTest({
 			title: title.trim() || undefined,
+			testMode,
 			surahStart,
 			ayahStart,
 			surahEnd,
@@ -156,6 +159,38 @@
 					placeholder="e.g. Juz 30 Quiz"
 					class="field-input"
 				/>
+			</div>
+
+			<!-- Test Mode Toggle -->
+			<div class="field">
+				<label class="field-label">Test Mode</label>
+				<div class="mode-toggle">
+					<button
+						class="mode-pill"
+						class:mode-active={testMode === 'flashcard'}
+						onclick={() => testMode = 'flashcard'}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mode-icon">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
+						</svg>
+						Flashcard
+					</button>
+					<button
+						class="mode-pill"
+						class:mode-active={testMode === 'mcq'}
+						onclick={() => testMode = 'mcq'}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mode-icon">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+						</svg>
+						Multiple Choice
+					</button>
+				</div>
+				<p class="mode-desc">
+					{testMode === 'flashcard'
+						? 'Students self-rate their recall of each word (Again / Hard / Good / Easy).'
+						: 'Students pick the correct translation from 4 choices. Graded automatically.'}
+				</p>
 			</div>
 
 			<!-- Range selection -->
@@ -462,6 +497,51 @@
 
 	.field-input:focus {
 		border-color: var(--accent-color);
+	}
+
+	/* Mode toggle */
+	.mode-toggle {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.mode-pill {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-primary);
+		border: 1.5px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 0.8rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.mode-pill:hover {
+		border-color: var(--accent-color);
+	}
+
+	.mode-pill.mode-active {
+		background: var(--accent-color);
+		border-color: var(--accent-color);
+		color: white;
+	}
+
+	.mode-icon {
+		width: 16px;
+		height: 16px;
+	}
+
+	.mode-desc {
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		margin-top: 0.375rem;
+		line-height: 1.4;
 	}
 
 	/* Range section */

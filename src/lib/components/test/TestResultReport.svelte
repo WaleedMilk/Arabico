@@ -1,13 +1,25 @@
 <script lang="ts">
-	import type { TestResult, TestWord, FSRSRatingType } from '$lib/types';
+	import type { TestResult, TestWord, FSRSRatingType, TestMode } from '$lib/types';
 
 	interface Props {
 		result: TestResult;
 		title?: string;
+		testMode?: TestMode;
 		onRetake?: () => void;
 	}
 
-	let { result, title, onRetake }: Props = $props();
+	let { result, title, testMode = 'flashcard', onRetake }: Props = $props();
+
+	let isMCQ = $derived(testMode === 'mcq');
+
+	// MCQ-specific stats
+	let mcqCorrect = $derived(() => {
+		let correct = 0;
+		for (const [, rating] of result.ratings) {
+			if (rating === 4) correct++;
+		}
+		return correct;
+	});
 
 	const ratingLabels: Record<number, string> = { 1: 'Again', 2: 'Hard', 3: 'Good', 4: 'Easy' };
 	const ratingColors: Record<number, string> = {
@@ -82,45 +94,70 @@
 				<span class="score-percent">%</span>
 			</div>
 		</div>
-		<p class="score-label">Overall Confidence</p>
+		<p class="score-label">{isMCQ ? 'Score' : 'Overall Confidence'}</p>
 	</div>
 
 	<!-- Stats Row -->
 	<div class="stats-row">
-		<div class="stat">
-			<span class="stat-value">{result.totalWords}</span>
-			<span class="stat-label">Words</span>
-		</div>
+		{#if isMCQ}
+			<div class="stat">
+				<span class="stat-value">{mcqCorrect()}/{result.totalWords}</span>
+				<span class="stat-label">Correct</span>
+			</div>
+		{:else}
+			<div class="stat">
+				<span class="stat-value">{result.totalWords}</span>
+				<span class="stat-label">Words</span>
+			</div>
+		{/if}
 		<div class="stat">
 			<span class="stat-value">{formattedDuration()}</span>
 			<span class="stat-label">Duration</span>
 		</div>
 		<div class="stat">
 			<span class="stat-value">{result.problemWords.length}</span>
-			<span class="stat-label">Needs Work</span>
+			<span class="stat-label">{isMCQ ? 'Wrong' : 'Needs Work'}</span>
 		</div>
 	</div>
 
-	<!-- Rating Distribution -->
-	<div class="distribution">
-		<h3 class="section-title">Rating Breakdown</h3>
-		<div class="dist-bars">
-			{#each [4, 3, 2, 1] as rating}
-				{@const count = ratingCounts()[rating as FSRSRatingType]}
-				{@const pct = result.totalWords > 0 ? Math.round((count / result.totalWords) * 100) : 0}
-				<div class="dist-row">
-					<span class="dist-label" style="color: {ratingColors[rating]}">{ratingLabels[rating]}</span>
-					<div class="dist-bar-track">
-						<div
-							class="dist-bar-fill"
-							style="width: {pct}%; background: {ratingColors[rating]}"
-						></div>
-					</div>
-					<span class="dist-count">{count}</span>
+	<!-- Rating Distribution (flashcard only) / MCQ summary -->
+	{#if isMCQ}
+		<div class="distribution">
+			<h3 class="section-title">Results</h3>
+			<div class="mcq-summary">
+				<div class="mcq-summary-row">
+					<span class="mcq-summary-dot" style="background: #16a34a"></span>
+					<span class="mcq-summary-label">Correct</span>
+					<span class="mcq-summary-value">{mcqCorrect()}</span>
 				</div>
-			{/each}
+				<div class="mcq-summary-row">
+					<span class="mcq-summary-dot" style="background: #dc2626"></span>
+					<span class="mcq-summary-label">Wrong</span>
+					<span class="mcq-summary-value">{result.totalWords - mcqCorrect()}</span>
+				</div>
+			</div>
 		</div>
-	</div>
+	{:else}
+		<div class="distribution">
+			<h3 class="section-title">Rating Breakdown</h3>
+			<div class="dist-bars">
+				{#each [4, 3, 2, 1] as rating}
+					{@const count = ratingCounts()[rating as FSRSRatingType]}
+					{@const pct = result.totalWords > 0 ? Math.round((count / result.totalWords) * 100) : 0}
+					<div class="dist-row">
+						<span class="dist-label" style="color: {ratingColors[rating]}">{ratingLabels[rating]}</span>
+						<div class="dist-bar-track">
+							<div
+								class="dist-bar-fill"
+								style="width: {pct}%; background: {ratingColors[rating]}"
+							></div>
+						</div>
+						<span class="dist-count">{count}</span>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<!-- Problem Words -->
 	{#if result.problemWords.length > 0}
@@ -315,6 +352,38 @@
 		font-size: 0.75rem;
 		color: var(--text-muted);
 		text-align: right;
+	}
+
+	/* MCQ summary */
+	.mcq-summary {
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+	}
+
+	.mcq-summary-row {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+	}
+
+	.mcq-summary-dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.mcq-summary-label {
+		flex: 1;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+
+	.mcq-summary-value {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-primary);
 	}
 
 	/* Problem words */

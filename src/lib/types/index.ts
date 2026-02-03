@@ -316,10 +316,18 @@ export interface QuranWordWithTranslation extends QuranWord {
 // Testing Types
 // ============================================
 
+export type TestMode = 'flashcard' | 'mcq';
+
+export interface MCQOption {
+	text: string;
+	isCorrect: boolean;
+}
+
 export interface TestConfig {
 	id: string;
 	creatorId: string;
 	title?: string;
+	testMode: TestMode;
 	surahStart: number;
 	ayahStart: number;
 	surahEnd: number;
