@@ -13,6 +13,26 @@
 	let generatedLink = $state<string | null>(null);
 	let copied = $state(false);
 	let signInError = $state<string | null>(null);
+	let authEmail = $state('');
+	let authPassword = $state('');
+	let authLoading = $state(false);
+	let isSignUp = $state(false);
+
+	async function handleEmailAuth() {
+		authLoading = true;
+		signInError = null;
+		try {
+			if (isSignUp) {
+				await auth.signUpWithEmail(authEmail, authPassword);
+			} else {
+				await auth.signInWithEmail(authEmail, authPassword);
+			}
+		} catch (err: any) {
+			signInError = err?.message || 'Authentication failed';
+		} finally {
+			authLoading = false;
+		}
+	}
 
 	// Get max ayahs for selected surahs
 	let maxAyahStart = $derived(surahList.find(s => s.id === surahStart)?.numberOfAyahs ?? 1);
@@ -73,8 +93,9 @@
 				<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
 			</svg>
 			<p>Sign in to create tests for your students.</p>
-			<button onclick={() => auth.signInWithGoogle()} class="sign-in-btn google-btn">
-				<svg viewBox="0 0 24 24" class="btn-icon">
+
+			<button onclick={() => auth.signInWithGoogle()} class="google-btn">
+				<svg viewBox="0 0 24 24" class="google-icon">
 					<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
 					<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
 					<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -82,6 +103,42 @@
 				</svg>
 				Sign in with Google
 			</button>
+
+			<div class="auth-divider">
+				<span>or</span>
+			</div>
+
+			<form onsubmit={(e) => { e.preventDefault(); handleEmailAuth(); }} class="auth-form">
+				<input
+					type="email"
+					bind:value={authEmail}
+					placeholder="Email"
+					required
+					class="auth-input"
+				/>
+				<input
+					type="password"
+					bind:value={authPassword}
+					placeholder="Password"
+					required
+					minlength="6"
+					class="auth-input"
+				/>
+				<button type="submit" disabled={authLoading} class="sign-in-btn email-btn">
+					{#if authLoading}
+						<span class="spinner-sm"></span>
+					{/if}
+					{isSignUp ? 'Create Account' : 'Sign In'}
+				</button>
+			</form>
+
+			<button
+				onclick={() => { isSignUp = !isSignUp; signInError = null; }}
+				class="auth-toggle"
+			>
+				{isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+			</button>
+
 			{#if signInError}
 				<p class="auth-error">{signInError}</p>
 			{/if}
@@ -242,22 +299,23 @@
 		margin-bottom: 1rem;
 	}
 
-	.sign-in-btn {
+	.google-btn {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 0.5rem;
+		width: 100%;
+		max-width: 18rem;
+		margin: 0 auto;
 		padding: 0.5rem 1.25rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-color);
 		border-radius: 8px;
 		font-weight: 500;
 		font-size: 0.875rem;
-		border: 1px solid var(--border-color);
 		cursor: pointer;
 		transition: all 0.2s;
-	}
-
-	.google-btn {
-		background: var(--bg-primary);
-		color: var(--text-primary);
 	}
 
 	.google-btn:hover {
@@ -265,9 +323,103 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
-	.btn-icon {
+	.google-icon {
 		width: 18px;
 		height: 18px;
+	}
+
+	.auth-divider {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		max-width: 18rem;
+		margin: 0.75rem auto;
+	}
+
+	.auth-divider::before,
+	.auth-divider::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: var(--border-color);
+	}
+
+	.auth-divider span {
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.auth-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		max-width: 18rem;
+		margin: 0 auto;
+	}
+
+	.auth-input {
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 0.875rem;
+		color: var(--text-primary);
+		outline: none;
+		transition: border-color 0.2s;
+	}
+
+	.auth-input:focus {
+		border-color: var(--accent-color);
+	}
+
+	.sign-in-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1.25rem;
+		border-radius: 8px;
+		font-weight: 500;
+		font-size: 0.875rem;
+		border: none;
+		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+
+	.email-btn {
+		background: var(--accent-color);
+		color: white;
+	}
+
+	.email-btn:hover:not(:disabled) {
+		opacity: 0.9;
+	}
+
+	.email-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.spinner-sm {
+		width: 14px;
+		height: 14px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+	}
+
+	.auth-toggle {
+		margin-top: 0.5rem;
+		background: none;
+		border: none;
+		font-size: 0.75rem;
+		color: var(--accent-color);
+		cursor: pointer;
+		text-decoration: underline;
 	}
 
 	.auth-error {
