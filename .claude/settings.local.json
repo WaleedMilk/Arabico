@@ -14,7 +14,8 @@
       "Bash(npx svelte-check:*)",
       "Bash(npm i:*)",
       "Bash(npx tsx:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(npx vite build)"
     ]
   }
 }

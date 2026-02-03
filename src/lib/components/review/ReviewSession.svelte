@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { reviewStore } from '$lib/stores/review.svelte';
 	import { engagement } from '$lib/stores/engagement.svelte';
-	import type { ReviewMode, ReviewQuality, ReviewDirection } from '$lib/types';
+	import type { ReviewMode, ReviewDirection } from '$lib/types';
 	import RecognitionCard from './RecognitionCard.svelte';
 	import RecallCard from './RecallCard.svelte';
 	import FlashCard from './FlashCard.svelte';
@@ -48,7 +48,7 @@
 		currentDirection = determineDirection();
 	}
 
-	async function handleQualitySelect(quality: ReviewQuality) {
+	async function handleQualitySelect(quality: 1 | 2 | 3 | 4) {
 		const responseTime = Date.now() - cardShownTime;
 
 		await reviewStore.recordResponse(quality, responseTime);
