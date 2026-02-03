@@ -478,8 +478,8 @@
 
 	.range-row {
 		display: flex;
-		align-items: center;
-		gap: 0.75rem;
+		flex-direction: column;
+		gap: 0.5rem;
 		margin-bottom: 0.75rem;
 	}
 
@@ -488,31 +488,29 @@
 		font-weight: 600;
 		color: var(--text-muted);
 		text-transform: uppercase;
-		width: 2.5rem;
-		flex-shrink: 0;
 	}
 
 	.range-fields {
-		flex: 1;
+		width: 100%;
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
 	}
 
 	.field-inline {
-		flex: 1;
-		min-width: 120px;
+		flex: 1 1 100%;
 	}
 
 	.field-select {
 		width: 100%;
-		padding: 0.4rem 0.5rem;
+		padding: 0.5rem 0.5rem;
 		background: var(--bg-primary);
 		border: 1px solid var(--border-color);
 		border-radius: 6px;
-		font-size: 0.8rem;
+		font-size: 0.875rem;
 		color: var(--text-primary);
 		outline: none;
+		max-width: 100%;
 	}
 
 	.field-select:focus {
