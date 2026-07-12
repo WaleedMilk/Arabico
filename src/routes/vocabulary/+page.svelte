@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { vocabulary } from '$lib/stores/vocabulary.svelte';
 	import type { FamiliarityLevel } from '$lib/types';
 
@@ -26,7 +27,7 @@
 	<!-- Header -->
 	<header class="text-center">
 		<h1 class="text-2xl font-medium text-[var(--text-primary)] mb-2">Your Vocabulary</h1>
-		<p class="text-[var(--text-muted)]">Track your Quranic Arabic word learning progress</p>
+		<p class="text-[var(--text-muted)]">Track your Arabic word learning progress</p>
 	</header>
 
 	<!-- Stats Cards -->
@@ -99,10 +100,10 @@
 		</svg>
 		<h3 class="text-lg font-medium text-[var(--text-primary)] mb-2">Review Mode Coming Soon</h3>
 		<p class="text-[var(--text-muted)] max-w-md mx-auto mb-4">
-			The contextual vocabulary review system is under development. Soon you'll be able to review words in their Quranic context.
+			The contextual vocabulary review system is under development. Soon you'll be able to review words in their original context.
 		</p>
 		<a
-			href="/surah/1"
+			href="{base}/surah/1"
 			class="inline-flex items-center gap-2 rounded-lg bg-[var(--accent-color)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sepia-600"
 		>
 			Start Reading

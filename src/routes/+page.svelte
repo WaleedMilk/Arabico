@@ -1,18 +1,19 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { surahList, toArabicNumerals } from '$lib/data/surahs';
 </script>
 
 <svelte:head>
-	<title>Arabico - Surah Index</title>
+	<title>Arabico - Text Index</title>
 </svelte:head>
 
 <div class="space-y-8">
 	<!-- Hero Section -->
 	<section class="py-8 text-center">
 		<h1 class="font-arabic text-4xl text-[var(--text-primary)] mb-2">القرآن الكريم</h1>
-		<p class="text-lg text-[var(--text-secondary)] italic">The Noble Quran</p>
+		<p class="text-lg text-[var(--text-secondary)] italic">Classical Arabic Text</p>
 		<p class="mt-4 text-[var(--text-muted)] max-w-lg mx-auto">
-			Learn Quranic Arabic through contextual vocabulary exposure.
+			Learn Arabic through contextual vocabulary exposure.
 			Tap any word to see its meaning and track your progress.
 		</p>
 	</section>
@@ -23,7 +24,7 @@
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 			{#each surahList as surah}
 				<a
-					href="/surah/{surah.id}"
+					href="{base}/surah/{surah.id}"
 					class="group flex items-center gap-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-elevated)] p-4 transition-all hover:border-[var(--accent-color)] hover:shadow-md"
 				>
 					<!-- Surah Number -->

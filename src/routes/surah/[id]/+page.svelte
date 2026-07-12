@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import { getSurahById } from '$lib/data/surahs';
 	import { getSurahAyahs, getWordGloss } from '$lib/data/quran-sample';
 	import SurahHeader from '$lib/components/reader/SurahHeader.svelte';
@@ -64,7 +65,7 @@
 					This surah's word-by-word data is being prepared. Currently, only Surah Al-Fatihah is available for demonstration.
 				</p>
 				<a
-					href="/surah/1"
+					href="{base}/surah/1"
 					class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--accent-color)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sepia-600"
 				>
 					Try Al-Fatihah
@@ -79,7 +80,7 @@
 		<nav class="mt-8 flex items-center justify-between border-t border-[var(--border-color)] pt-6">
 			{#if surahId > 1}
 				<a
-					href="/surah/{surahId - 1}"
+					href="{base}/surah/{surahId - 1}"
 					class="flex items-center gap-2 text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
@@ -92,7 +93,7 @@
 			{/if}
 
 			<a
-				href="/"
+				href={base || '/'}
 				class="text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
 			>
 				All Surahs
@@ -100,7 +101,7 @@
 
 			{#if surahId < 114}
 				<a
-					href="/surah/{surahId + 1}"
+					href="{base}/surah/{surahId + 1}"
 					class="flex items-center gap-2 text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
 				>
 					<span>Next Surah</span>
@@ -127,7 +128,7 @@
 		<h1 class="text-2xl font-medium text-[var(--text-primary)] mb-2">Surah Not Found</h1>
 		<p class="text-[var(--text-muted)] mb-4">The requested surah does not exist.</p>
 		<a
-			href="/"
+			href={base || '/'}
 			class="inline-flex items-center gap-2 text-[var(--accent-color)] hover:underline"
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
